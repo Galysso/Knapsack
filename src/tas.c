@@ -1,8 +1,9 @@
-#include "TAS.h"
+#include "tas.h"
+#include "graphe.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <time.h>
+
 
 void TAS_initialiser(Tas *tas, unsigned int taille) {
 	tas->tab = malloc(taille*sizeof(int));
@@ -99,39 +100,4 @@ void TAS_afficher(Tas *tas) {
 		printf("%d|", tab[i]);
 	}
 	printf("\n");
-}
-
-int main() {
-	srand(5);
-	Tas *tas = malloc(sizeof(Tas));
-
-	TAS_initialiser(tas, 10);
-	for (int i = 0; i < 20; ++i) {
-		int val = rand()%50 - 25;
-		//printf("ajout de : %d\n", val);
-		TAS_ajouter(tas, val);
-	}
-	for (int i = 0; i < 10; ++i) {
-		int val = rand()%tas->n;
-		//printf("retrait de : %d\n", val);
-		TAS_retirerInd(tas, val);
-	}
-	for (int i = 0; i < 20; ++i) {
-		int val = rand()%50 - 25;
-		//printf("ajout de : %d\n", val);
-		TAS_ajouter(tas, val);
-	}printf("COCO\n");
-	for (int i = 0; i < 10; ++i) {
-		int val = rand()%tas->n;
-		//printf("ajout de : %d\n", val);
-		TAS_retirerInd(tas, val);
-	}
-	for (int i = 0; i < 20; ++i) {
-		int val = rand()%50 - 25;
-		//printf("ajout de : %d\n", val);
-		TAS_ajouter(tas, val);
-	}
-
-	TAS_afficher(tas);
-	printf("TEST\n");
 }
