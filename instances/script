@@ -1,0 +1,30 @@
+
+#/bin/bash
+
+echo "% Comparison between the new parametric method and (Cerqueus et al., 2015) for the exact computation of the OCSUB" > comparison.tex
+echo "\documentclass[10pt,a4paper]{article}" >> comparison.tex
+echo "\usepackage{a4wide}" >> comparison.tex
+echo "\usepackage{multirow}" >> comparison.tex
+echo "\begin{document}" >> comparison.tex
+
+echo "\begin{table}" >> comparison.tex
+echo "\begin{tabular}{c|cc|}" >> comparison.tex
+echo "\hline" >> comparison.tex
+echo "Instance & New parametric method & (Cerqueus et al., 2015)\\\\" >> comparison.tex
+echo "\hline" >> comparison.tex
+
+for n in A1.DAT A2.DAT A3.DAT A4.DAT D1.DAT D2.DAT D3.DAT D4.DAT kp28.DAT kp28-2.DAT kp28c1W-c2ZTL.DAT kp28cW-WZTL.DAT kp28W.DAT kp28W-Perm.DAT kp28W-ZTL.DAT ZTL28.DAT ZTL100.DAT ZTL105.DAT ZTL250.DAT ZTL500.DAT ZTL750.DAT W7BI-rnd1-1800.DAT W7BI-rnd1-3000.DAT W7BI-tube1-1800.DAT W7BI-tube1-3000.DAT W7BI-tube1-asyn.DAT W7BI-tube2-1800.DAT Wcollage-tube.DAT
+do
+	echo "$n & " >> comparison.tex
+	./OCSUBNew $n > res.out
+	cat res.out | grep "temps" | awk '{print $3}' >> comparison.tex
+	echo "& " >> comparison.tex
+	./bornes $n > res.out
+	cat res.out | grep "temps" | awk '{print $3}' >> comparison.tex
+	echo "\\\\" >> comparison.tex
+done
+
+echo "\hline" >> comparison.tex
+echo "\end{tabular}" >> comparison.tex
+echo "\end{table}" >> comparison.tex
+echo "\end{document}" >> comparison.tex

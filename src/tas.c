@@ -5,21 +5,23 @@
 #include <stdbool.h>
 
 
-void TAS_initialiser(Tas *tas, unsigned int taille) {
-	tas->tab = malloc(taille*sizeof(noeud *));
+Tas *TAS_initialiser(unsigned int taille) {
+	Tas *tas = malloc(sizeof(Tas));
+	tas->tab = malloc(taille*sizeof(Noeud *));
 	tas->taille = taille;
 	tas->n = 0;
+	return tas;
 }
 
-void TAS_ajouter(Tas *tas, noeud *val) {
+void TAS_ajouter(Tas *tas, Noeud *val) {
 	if (tas->n == tas->taille) {
 		tas->taille = 2*tas->taille;
-		tas->tab = realloc(tas->tab, tas->taille*sizeof(noeud *));
+		tas->tab = realloc(tas->tab, tas->taille*sizeof(Noeud *));
 	}
 	unsigned int indP;	// l'indice du père
 	unsigned int indC;	// l'indice de parcours
-	noeud *tmp;			// valeur temporaire pour échange
-	noeud **tab = tas->tab;
+	Noeud *tmp;			// valeur temporaire pour échange
+	Noeud **tab = tas->tab;
 	tab[tas->n] = val;	// on insère la valeur à la fin du tableau
 	indC = tas->n;
 	indP = (indC-1)/2;	// on récupère l'indice du père (= indC si c'est la racine)
@@ -42,11 +44,11 @@ void TAS_retirerMax(Tas *tas) {
 void TAS_retirerInd(Tas *tas, int ind) {
 	unsigned int indFG;		// l'indice du fils gauche
 	unsigned int indFD;		// l'indice du fils droit
-	noeud *tmp;				// valeur temporaire pour échange
+	Noeud *tmp;				// valeur temporaire pour échange
 	bool fini = false;
 	tas->n = tas->n - 1;	// il y a un élément de moins dans le tas
 	int n = tas->n;
-	noeud **tab = tas->tab;
+	Noeud **tab = tas->tab;
 	tab[ind] = tas->tab[n];	// on remplace l'élément à supprimer par le dernier du tas	
 
 	do {//TAS_afficher(tas);
@@ -93,7 +95,7 @@ void TAS_maximum(Tas *tas) {
 }
 
 void TAS_afficher(Tas *tas) {
-	noeud **tab = tas->tab;
+	Noeud **tab = tas->tab;
 	int n = tas->n;
 	int sautLigne = 1;
 	int curseur = 0;

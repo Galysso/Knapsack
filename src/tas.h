@@ -6,13 +6,13 @@
 typedef struct Tas Tas;
 
 struct Tas {
-	noeud **tab;
+	Noeud **tab;
 	unsigned int n;
 	unsigned int taille;
 };
 
-void TAS_initialiser(Tas *tas, unsigned int taille);
-void TAS_ajouter(Tas *tas, noeud *val);
+Tas *TAS_initialiser(unsigned int taille);
+void TAS_ajouter(Tas *tas, Noeud *val);
 void TAS_retirerMax(Tas *tas);
 void TAS_retirerInd(Tas *tas, int ind);
 void TAS_minimum(Tas *tas);

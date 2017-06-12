@@ -1,5 +1,5 @@
 CXX = gcc
-SOURCES = src/tas.c src/graphe.c
+SOURCES = src/tas.c src/graphe.c src/probleme.c
 CFLAGS = -std=c99 -Wall -g -Ofast
 LDFLAGS =
 .PHONY = clean
