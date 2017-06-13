@@ -2,9 +2,9 @@
 #include "probleme.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <stdbool.h>
 
-Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
+Solution **genererGraphe(Probleme *p, unsigned int *nSol) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
 
@@ -14,6 +14,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
 	nouveau->poids2 = 0;
 	nouveau->precBest = NULL;
 	nouveau->precAlt = NULL;
+	nouveau->existeAlt = false;
 
 	unsigned int nbPrec;	// le nombre de noeuds de la dernière colonne construite
 	unsigned int nb = 1;	// le nombre de noeuds de la colonne en construction
@@ -39,6 +40,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
 				nouveau->poids2 = noeudPrec->poids2;
 				nouveau->precBest = noeudPrec;
 				nouveau->precAlt = NULL;
+				nouveau->existeAlt = noeudPrec->existeAlt;
 				noeuds[i][nb] = nouveau;
 				++nb;
 			} else {
@@ -50,6 +52,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
 				} else {
 					noeud->precAlt = noeudPrec;
 				}
+				noeud->existeAlt = true;
 			}
 
 			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 +p->poids2[i-1] <= p->capacite2)) {
@@ -64,6 +67,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
 					nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
 					nouveau->precBest = noeudPrec;
 					nouveau->precAlt = NULL;
+					nouveau->existeAlt = noeudPrec->existeAlt;
 					noeuds[i][nb] = nouveau;
 					++nb;
 				} else {
@@ -75,15 +79,26 @@ Noeud ***genererGraphe(Probleme *p, unsigned int *n) {
 					} else {
 						noeud->precAlt = noeudPrec;
 					}
+					noeud->existeAlt = true;
 				}
 			}
 		}
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
-		printf("n = %d\n", nb);
+		printf("nb=%d\n", nb);
 	}
 
-	*n = nb;
-	return noeuds;
+	*nSol = nb;
+	Solution **sols = malloc(nb*sizeof(Solution *));
+	for (int i = 0; i < nb; ++i) {
+		sols[i] = malloc(sizeof(Solution));
+		sols[i]->solution = noeuds[p->n][i];
+		sols[i]->val = noeuds[p->n][i]->val;
+		sols[i]->deviation = 0;
+		sols[i]->existeAlt = noeuds[p->n][i]->existeAlt;
+		sols[i]->nDeviation = 0;
+	}
+
+	return sols;
 }
 
 void afficherGraphe(Noeud *node, unsigned int n) {
@@ -95,4 +110,42 @@ void afficherGraphe(Noeud *node, unsigned int n) {
 			printf("precAlt = (%d,%d,%d)\n", n-1, node->precAlt->poids1, node->precAlt->poids2);
 		}
 	}
+}
+
+void afficherSolution(Solution *sol, int n) {
+	Noeud *noeud;
+	printf("[%d]: ", sol->val);
+
+	if (sol->deviation) {
+		int nDev = sol->nDeviation;
+		unsigned int *deviations = malloc(nDev*sizeof(unsigned int));
+		for (int i = 0; i < nDev; ++i) {
+			deviations[i] = sol->deviation;
+			sol = (Solution*) sol->solution;
+		}
+
+		noeud = (Noeud*) sol->solution;
+		--nDev;
+		while (nDev >= 0) {
+			while (n > deviations[nDev]) {
+				printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+				noeud = noeud->precBest;
+				--n;
+			}
+			printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+			noeud = noeud->precAlt;
+			--n;
+			--nDev;
+		}
+	} else {
+		noeud = (Noeud*) sol->solution;
+	}
+
+	for ( ; n > 0; --n) {
+		printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+		noeud = noeud->precBest;
+	}
+	printf("(%d,%d,%d)", n, noeud->poids1, noeud->poids2);
+	
+	printf("\n");
 }

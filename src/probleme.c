@@ -1,6 +1,8 @@
 #include "probleme.h"
 
 #include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 
 Probleme *genererProbleme(char *nomFichier) {
 	Probleme *p = malloc(sizeof(Probleme));
@@ -16,9 +18,9 @@ Probleme *genererProbleme(char *nomFichier) {
 		unsigned int *poids1;
 		unsigned int *poids2;
 
-		fscanf(fichier, "%d", &nbVariable);
-		fscanf(fichier, "%d", &capacite1);
-		fscanf(fichier, "%d", &capacite2);
+		assert(fscanf(fichier, "%d", &nbVariable));
+		assert(fscanf(fichier, "%d", &capacite1));
+		assert(fscanf(fichier, "%d", &capacite2));
 
 		coef1 = malloc(nbVariable*sizeof(unsigned int));
 		coef2 = malloc(nbVariable*sizeof(unsigned int));
@@ -26,10 +28,10 @@ Probleme *genererProbleme(char *nomFichier) {
 		poids2 = malloc(nbVariable*sizeof(unsigned int));
 
 		for (int i = 0; i < nbVariable; ++i) {
-			fscanf(fichier, "%d", &coef1[i]);
-			fscanf(fichier, "%d", &poids1[i]);
-			fscanf(fichier, "%d", &coef2[i]);
-			fscanf(fichier, "%d", &poids2[i]);
+			assert(fscanf(fichier, "%d", &coef1[i]));
+			assert(fscanf(fichier, "%d", &poids1[i]));
+			assert(fscanf(fichier, "%d", &coef2[i]));
+			assert(fscanf(fichier, "%d", &poids2[i]));
 		}
 
 		p->n = nbVariable;
