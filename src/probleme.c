@@ -28,8 +28,8 @@ Probleme *genererProbleme(char *nomFichier) {
 		coef2 = malloc(nbVariable*sizeof(unsigned int));
 		poids1 = malloc(nbVariable*sizeof(unsigned int));
 		poids2 = malloc(nbVariable*sizeof(unsigned int));
-		poidsCumules1 = malloc(nbVariable*sizeof(unsigned int));
-		poidsCumules2 = malloc(nbVariable*sizeof(unsigned int));
+		poidsCumules1 = malloc((1+nbVariable)*sizeof(unsigned int));
+		poidsCumules2 = malloc((1+nbVariable)*sizeof(unsigned int));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
@@ -41,10 +41,12 @@ Probleme *genererProbleme(char *nomFichier) {
 		}
 		poidsCumules1[nbVariable-1] = poids1[nbVariable-1];
 		poidsCumules2[nbVariable-1] = poids2[nbVariable-1];
-		for (int i = nbVariable-2; i > 0; --i) {
+		for (int i = nbVariable-2; i >= 0; --i) {
 			poidsCumules1[i] = poidsCumules1[i+1] + poids1[i];
 			poidsCumules2[i] = poidsCumules2[i+1] + poids2[i];
 		}
+		poidsCumules1[nbVariable] = 0;
+		poidsCumules2[nbVariable] = 0;
 
 		p->n = nbVariable;
 		p->capacite1 = capacite1;
@@ -53,6 +55,8 @@ Probleme *genererProbleme(char *nomFichier) {
 		p->coefficients2 = coef2;
 		p->poids1 = poids1;
 		p->poids2 = poids2;
+		p->poidsCumules1 = poidsCumules1;
+		p->poidsCumules2 = poidsCumules2;
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}

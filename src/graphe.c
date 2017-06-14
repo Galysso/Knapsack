@@ -36,42 +36,108 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 		noeuds[i] = malloc(2*nbPrec*sizeof(Noeud *));
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
-			int k = 0;
-			while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
-				++k;
-			}
-			if (k == nb) {
-				nouveau = malloc(sizeof(Noeud));
-				nouveau->val = noeudPrec->val;
-				nouveau->poids1 = noeudPrec->poids1;
-				nouveau->poids2 = noeudPrec->poids2;
-				nouveau->precBest = noeudPrec;
-				nouveau->precAlt = NULL;
-				nouveau->existeAlt = noeudPrec->existeAlt;
-				noeuds[i][nb] = nouveau;
-				++nb;
-			} else {
-				noeud = noeuds[i][k];
-				if (noeud->val < noeudPrec->val) {
-					noeud->val = noeudPrec->val;
-					noeud->precAlt = noeuds[i][k]->precBest;
-					noeud->precBest = noeudPrec;
-				} else {
-					noeud->precAlt = noeudPrec;
-				}
-				noeud->existeAlt = true;
-			}
+			unsigned int k = 0;
 
-			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 +p->poids2[i-1] <= p->capacite2)) {
-				k = 0;
-				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1 + p->poids1[i-1]) || (noeuds[i][k]->poids2 != noeudPrec->poids2 + p->poids2[i-1]))) {
+
+
+
+
+			unsigned int futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i-1];
+			unsigned int futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i-1];
+			bool potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
+			int l;
+			if (!potentiel) {
+				/*printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
+				printf("fPoids1=%d\n", futurPoids1);
+				printf("fPoids2=%d\n", futurPoids2);*/
+				Noeud *noeudAjoutable = noeudPrec;
+				l = i-1;
+				//printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
+				while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
+					//printf("COCO\n");
+					--l;
+					noeudAjoutable = noeudAjoutable->precBest;
+				}
+				potentiel = (l == 0);
+				/*printf("potentiel : %d\n", potentiel);
+				if (!potentiel) {
+					printf("cause : (%d,%d,%d)\n", l, noeudAjoutable->precBest->poids1, noeudAjoutable->precBest->poids2);
+				}*/
+			}
+			if (potentiel) {
+
+
+
+
+
+				if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
+					while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1 + p->poids1[i-1]) || (noeuds[i][k]->poids2 != noeudPrec->poids2 + p->poids2[i-1]))) {
+						++k;
+					}
+					if (k == nb) {
+						nouveau = malloc(sizeof(Noeud));
+						nouveau->val = noeudPrec->val + p->coefficients1[i-1];
+						nouveau->poids1 = noeudPrec->poids1 + p->poids1[i-1];
+						nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
+						nouveau->precBest = noeudPrec;
+						nouveau->precAlt = NULL;
+						nouveau->existeAlt = noeudPrec->existeAlt;
+						noeuds[i][nb] = nouveau;
+						++nb;
+					} else {
+						noeud = noeuds[i][k];
+						if (noeud->val < noeudPrec->val + p->coefficients1[i-1]) {
+							noeud->val = noeudPrec->val + p->coefficients1[i-1];
+							noeud->precAlt = noeuds[i][k]->precBest;
+							noeud->precBest = noeudPrec;
+						} else {
+							noeud->precAlt = noeudPrec;
+						}
+						noeud->existeAlt = true;
+					}
+				}
+			}
+			k = 0;
+
+
+
+
+
+			futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i];
+			futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i];
+			potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
+			if (!potentiel) {
+				/*printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
+				printf("fPoids1=%d\n", futurPoids1);
+				printf("fPoids2=%d\n", futurPoids2);*/
+				Noeud *noeudAjoutable = noeudPrec;
+				l = i-1;
+				//printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
+				while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
+					//printf("COCO\n");
+					--l;
+					noeudAjoutable = noeudAjoutable->precBest;
+				}
+				potentiel = (l == 0);
+				/*printf("potentiel : %d\n", potentiel);
+				if (!potentiel) {
+					printf("cause : (%d,%d,%d)\n", l, noeudAjoutable->precBest->poids1, noeudAjoutable->precBest->poids2);
+				}*/
+			}
+			if (potentiel) {
+
+
+
+
+
+				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
 					++k;
 				}
 				if (k == nb) {
 					nouveau = malloc(sizeof(Noeud));
-					nouveau->val = noeudPrec->val + p->coefficients1[i-1];
-					nouveau->poids1 = noeudPrec->poids1 + p->poids1[i-1];
-					nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
+					nouveau->val = noeudPrec->val;
+					nouveau->poids1 = noeudPrec->poids1;
+					nouveau->poids2 = noeudPrec->poids2;
 					nouveau->precBest = noeudPrec;
 					nouveau->precAlt = NULL;
 					nouveau->existeAlt = noeudPrec->existeAlt;
@@ -79,8 +145,8 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
-					if (noeud->val < noeudPrec->val + p->coefficients1[i-1]) {
-						noeud->val = noeudPrec->val + p->coefficients1[i-1];
+					if (noeud->val < noeudPrec->val) {
+						noeud->val = noeudPrec->val;
 						noeud->precAlt = noeuds[i][k]->precBest;
 						noeud->precBest = noeudPrec;
 					} else {
@@ -91,7 +157,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 			}
 		}
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
-		printf("i=%d\n", i);
+		printf("%d : %d\n", i, nb);
 		(*nSol)[i] = nb;
 	}
 
