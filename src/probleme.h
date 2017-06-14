@@ -11,6 +11,8 @@ struct Probleme {
 	unsigned int *coefficients2;
 	unsigned int *poids1;			// poids des variables dans la fonction objectif
 	unsigned int *poids2;
+	unsigned int *poidsCumules1;
+	unsigned int *poidsCumules2;
 };
 
 Probleme *genererProbleme(char *nomFichier);

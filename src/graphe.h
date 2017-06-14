@@ -29,7 +29,9 @@ struct Solution {
 	bool existeAlt;				// vrai si la solution admet au moins une réoptimisation
 };
 
-Solution **genererGraphe(Probleme *p, unsigned int *nSol);
+Noeud ***genererGraphe(Probleme *p, unsigned int **nSol);
+Solution **initialiserSolutions(Noeud **noeuds, unsigned int n);
+void nouvellesSolutions(Solution ***sol, Noeud **noeuds, unsigned int n);
 void afficherSolution(Solution *sol, int n);
 void afficherGraphe(Noeud *racine, unsigned int n);
 

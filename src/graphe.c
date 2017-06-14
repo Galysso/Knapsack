@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-Solution **genererGraphe(Probleme *p, unsigned int *nSol) {
+Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
 
@@ -22,6 +22,13 @@ Solution **genererGraphe(Probleme *p, unsigned int *nSol) {
 	noeuds = malloc((p->n+1)*sizeof(Noeud **));
 	noeuds[0] = malloc(sizeof(Noeud *));
 	noeuds[0][0] = nouveau;
+
+	*nSol = malloc((p->n+1)*sizeof(unsigned int));
+	(*nSol)[0] = 1;
+	(*nSol)[1] = 2;
+	(*nSol)[2] = 3;
+	(*nSol)[3] = 4;
+	(*nSol)[4] = 5;
 
 	for (int i = 1; i <= p->n; ++i) {
 		nbPrec = nb;
@@ -84,20 +91,23 @@ Solution **genererGraphe(Probleme *p, unsigned int *nSol) {
 			}
 		}
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
-		printf("nb=%d\n", nb);
+		printf("i=%d\n", i);
+		(*nSol)[i] = nb;
 	}
 
-	*nSol = nb;
-	Solution **sols = malloc(nb*sizeof(Solution *));
-	for (int i = 0; i < nb; ++i) {
+	return noeuds;
+}
+
+Solution **initialiserSolutions(Noeud **noeuds, unsigned int n) {
+	Solution **sols = malloc(n*sizeof(Solution *));
+	for (int i = 0; i < n; ++i) {
 		sols[i] = malloc(sizeof(Solution));
-		sols[i]->solution = noeuds[p->n][i];
-		sols[i]->val = noeuds[p->n][i]->val;
+		sols[i]->solution = noeuds[i];
+		sols[i]->val = noeuds[i]->val;
 		sols[i]->deviation = 0;
-		sols[i]->existeAlt = noeuds[p->n][i]->existeAlt;
+		sols[i]->existeAlt = noeuds[i]->existeAlt;
 		sols[i]->nDeviation = 0;
 	}
-
 	return sols;
 }
 

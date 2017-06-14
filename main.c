@@ -10,15 +10,15 @@ int main() {
 	clock_t debutGraphe, finGraphe, debutRanking, finRanking;
 
 	Probleme *p = genererProbleme("exemple.DAT");
-	unsigned int n;
+	unsigned int *n;
 
 	debutGraphe = clock();
-	Solution **sols = genererGraphe(p, &n);
+	Noeud ***noeuds = genererGraphe(p, &n);		// tableau 2D des noeuds
+	Solution **sols = initialiserSolutions(noeuds[p->n], n[p->n]);
 	finGraphe = clock();
 
 	Tas *tas = TAS_initialiser(3*p->n);
-
-	for (int i = 0; i < n; ++i) {
+	for (int i = 0; i < n[p->n]; ++i) {
 		TAS_ajouter(tas, sols[i]);
 	}
 
