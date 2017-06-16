@@ -8,7 +8,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
 
-	nouveau = malloc(sizeof(Noeud));
+	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
 	nouveau->poids1 = 0;
 	nouveau->poids2 = 0;
@@ -20,8 +20,8 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 	unsigned int nbPrec;	// le nombre de noeuds de la dernière colonne construite
 	unsigned int nb = 1;	// le nombre de noeuds de la colonne en construction
 
-	noeuds = malloc((p->n+1)*sizeof(Noeud **));
-	noeuds[0] = malloc(sizeof(Noeud *));
+	noeuds = (Noeud ***) malloc((p->n+1)*sizeof(Noeud **));
+	noeuds[0] = (Noeud **) malloc(sizeof(Noeud *));
 	noeuds[0][0] = nouveau;
 
 	*nSol = malloc((p->n+1)*sizeof(unsigned int));
@@ -34,29 +34,10 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 	for (int i = 1; i <= p->n; ++i) {
 		nbPrec = nb;
 		nb = 0;
-		noeuds[i] = malloc(2*nbPrec*sizeof(Noeud *));
+		noeuds[i] = (Noeud **) malloc(2*nbPrec*sizeof(Noeud *));
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
 			unsigned int k = 0;
-
-
-
-
-
-			/*unsigned int futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i-1];
-			unsigned int futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i-1];
-			bool potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
-			int l;
-			if (!potentiel) {
-				Noeud *noeudAjoutable = noeudPrec;
-				l = i-1;
-				while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
-					--l;
-					noeudAjoutable = noeudAjoutable->precBest;
-				}
-				potentiel = (l == 0);
-			}
-			if (potentiel) {*/
 
 
 
@@ -67,7 +48,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 						++k;
 					}
 					if (k == nb) {
-						nouveau = malloc(sizeof(Noeud));
+						nouveau = (Noeud *) malloc(sizeof(Noeud));
 						nouveau->val = noeudPrec->val + p->coefficients1[i-1];
 						nouveau->poids1 = noeudPrec->poids1 + p->poids1[i-1];
 						nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
@@ -119,7 +100,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 					++k;
 				}
 				if (k == nb) {
-					nouveau = malloc(sizeof(Noeud));
+					nouveau = (Noeud *) malloc(sizeof(Noeud));
 					nouveau->val = noeudPrec->val;
 					nouveau->poids1 = noeudPrec->poids1;
 					nouveau->poids2 = noeudPrec->poids2;
@@ -152,9 +133,9 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 }
 
 Solution **initialiserSolutions(Noeud **noeuds, unsigned int n) {
-	Solution **sols = malloc(n*sizeof(Solution *));
+	Solution **sols = (Solution **) malloc(n*sizeof(Solution *));
 	for (int i = 0; i < n; ++i) {
-		sols[i] = malloc(sizeof(Solution));
+		sols[i] = (Solution *) malloc(sizeof(Solution));
 		sols[i]->solution = noeuds[i];
 		sols[i]->val = noeuds[i]->val;
 		sols[i]->deviation = 0;
@@ -181,7 +162,7 @@ void afficherSolution(Solution *sol, int n) {
 
 	if (sol->deviation) {
 		int nDev = sol->nDeviation;
-		unsigned int *deviations = malloc(nDev*sizeof(unsigned int));
+		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
 			deviations[i] = sol->deviation;
 			sol = (Solution*) sol->solution;

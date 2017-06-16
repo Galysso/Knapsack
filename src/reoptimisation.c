@@ -15,7 +15,7 @@ void genererSolutions(Solution *sol, Tas *tas, Probleme *prob) {
 
 	if (solCourante->deviation) {
 		int nDev = solCourante->nDeviation;
-		unsigned int *deviations = malloc(nDev*sizeof(unsigned int));
+		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
 			deviations[i] = solCourante->deviation;
 			solCourante = (Solution*) solCourante->solution;
@@ -38,7 +38,7 @@ void genererSolutions(Solution *sol, Tas *tas, Probleme *prob) {
 
 	while (noeud->existeAlt) {
 		if (noeud->precAlt) {
-			nouvelleSol = malloc(sizeof(Solution));
+			nouvelleSol = (Solution *) malloc(sizeof(Solution));
 			nouvelleSol->solution = sol;
 			if (noeud->val == noeud->precBest->val) {
 				nouvelleSol->val = solVal - noeud->precBest->val + noeud->precAlt->val + prob->coefficients1[n-1];

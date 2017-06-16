@@ -1,6 +1,7 @@
 #include "src/graphe.h"
 #include "src/tas.h"
 #include "src/reoptimisation.h"
+#include "src/knapglpk.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,8 +35,16 @@ int main() {
 	finRanking = clock();
 
 	printf("nombre de solutions : %d\n", cpt);
-	printf("Génération du graphe : %fs\n", ((double) (1000*(finGraphe-debutGraphe)/CLOCKS_PER_SEC))/1000);	
-	printf("Calcul du ranking : %fs\n", ((double) (1000*(finRanking-debutRanking)/CLOCKS_PER_SEC))/1000);	
+	printf("Génération du graphe : %fs\n", ((double) (1000*(finGraphe-debutGraphe)/CLOCKS_PER_SEC))/1000);
+	printf("Calcul du ranking : %fs\n", ((double) (1000*(finRanking-debutRanking)/CLOCKS_PER_SEC))/1000);
+
+	unsigned int bestX1, bestY1, bestX2, bestY2;
+	glpkSolutionsExtremes(p, &bestX1, &bestY1, &bestX2, &bestY2);
+
+	printf("X1=%d\n", bestX1);
+	printf("Y1=%d\n", bestY1);
+	printf("X2=%d\n", bestX2);
+	printf("Y2=%d\n", bestY2);
 
 	printf("COCO\n");
 }

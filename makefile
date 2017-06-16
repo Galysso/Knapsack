@@ -1,7 +1,7 @@
 CXX = gcc
-SOURCES = src/tas.c src/graphe.c src/probleme.c src/reoptimisation.c
+SOURCES = src/tas.c src/graphe.c src/probleme.c src/reoptimisation.c src/knapglpk.c
 CFLAGS = -std=c99 -Wall -g -Ofast
-LDFLAGS =
+LDFLAGS = -lm -lglpk
 .PHONY = clean
 
 all: main

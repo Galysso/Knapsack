@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 Probleme *genererProbleme(char *nomFichier) {
-	Probleme *p = malloc(sizeof(Probleme));
+	Probleme *p = (Probleme *) malloc(sizeof(Probleme));
 
 	FILE *fichier = fopen(nomFichier, "r");
 
@@ -24,12 +24,12 @@ Probleme *genererProbleme(char *nomFichier) {
 		assert(fscanf(fichier, "%d", &capacite1));
 		assert(fscanf(fichier, "%d", &capacite2));
 
-		coef1 = malloc(nbVariable*sizeof(unsigned int));
-		coef2 = malloc(nbVariable*sizeof(unsigned int));
-		poids1 = malloc(nbVariable*sizeof(unsigned int));
-		poids2 = malloc(nbVariable*sizeof(unsigned int));
-		poidsCumules1 = malloc((1+nbVariable)*sizeof(unsigned int));
-		poidsCumules2 = malloc((1+nbVariable)*sizeof(unsigned int));
+		coef1 = (unsigned int *) malloc(nbVariable*sizeof(unsigned int));
+		coef2 = (unsigned int *) malloc(nbVariable*sizeof(unsigned int));
+		poids1 = (unsigned int *) malloc(nbVariable*sizeof(unsigned int));
+		poids2 = (unsigned int *) malloc(nbVariable*sizeof(unsigned int));
+		poidsCumules1 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
+		poidsCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
