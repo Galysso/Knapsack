@@ -15,6 +15,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 	nouveau->precBest = NULL;
 	nouveau->precAlt = NULL;
 	nouveau->existeAlt = false;
+	nouveau->ajoutForce = false;
 
 	unsigned int nbPrec;	// le nombre de noeuds de la dernière colonne construite
 	unsigned int nb = 1;	// le nombre de noeuds de la colonne en construction
@@ -42,29 +43,20 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 
 
 
-			unsigned int futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i-1];
+			/*unsigned int futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i-1];
 			unsigned int futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i-1];
 			bool potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
 			int l;
 			if (!potentiel) {
-				/*printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
-				printf("fPoids1=%d\n", futurPoids1);
-				printf("fPoids2=%d\n", futurPoids2);*/
 				Noeud *noeudAjoutable = noeudPrec;
 				l = i-1;
-				//printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
 				while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
-					//printf("COCO\n");
 					--l;
 					noeudAjoutable = noeudAjoutable->precBest;
 				}
 				potentiel = (l == 0);
-				/*printf("potentiel : %d\n", potentiel);
-				if (!potentiel) {
-					printf("cause : (%d,%d,%d)\n", l, noeudAjoutable->precBest->poids1, noeudAjoutable->precBest->poids2);
-				}*/
 			}
-			if (potentiel) {
+			if (potentiel) {*/
 
 
 
@@ -82,6 +74,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 						nouveau->precBest = noeudPrec;
 						nouveau->precAlt = NULL;
 						nouveau->existeAlt = noeudPrec->existeAlt;
+						nouveau->ajoutForce = noeudPrec->ajoutForce;
 						noeuds[i][nb] = nouveau;
 						++nb;
 					} else {
@@ -94,35 +87,27 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 							noeud->precAlt = noeudPrec;
 						}
 						noeud->existeAlt = true;
+						noeud->ajoutForce = noeudPrec->ajoutForce;
 					}
 				}
-			}
+			//}
 			k = 0;
 
 
-
-
-
-			futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i];
-			futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i];
-			potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
-			if (!potentiel) {
-				/*printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
-				printf("fPoids1=%d\n", futurPoids1);
-				printf("fPoids2=%d\n", futurPoids2);*/
-				Noeud *noeudAjoutable = noeudPrec;
-				l = i-1;
-				//printf("(%d,%d,%d) ?\n", i, noeudPrec->poids1 + p->poids1[i-1], noeudPrec->poids2 + p->poids2[i-1]);
-				while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
-					//printf("COCO\n");
-					--l;
-					noeudAjoutable = noeudAjoutable->precBest;
-				}
-				potentiel = (l == 0);
-				/*printf("potentiel : %d\n", potentiel);
+			bool potentiel = true;
+			if (!noeudPrec->ajoutForce) {
+				unsigned int futurPoids1 = noeudPrec->poids1 + p->poidsCumules1[i];
+				unsigned int futurPoids2 = noeudPrec->poids2 + p->poidsCumules2[i];
+				potentiel = ((futurPoids1 >= p->capacite1) || (futurPoids2 >= p->capacite2));
 				if (!potentiel) {
-					printf("cause : (%d,%d,%d)\n", l, noeudAjoutable->precBest->poids1, noeudAjoutable->precBest->poids2);
-				}*/
+					Noeud *noeudAjoutable = noeudPrec;
+					int l = i-1;
+					while ((l > 0) && ((noeudAjoutable->precBest->poids1 != noeudAjoutable->poids1) || (futurPoids1 + p->poids1[l-1] > p->capacite1) || (futurPoids2 + p->poids2[l-1] > p->capacite2))) {
+						--l;
+						noeudAjoutable = noeudAjoutable->precBest;
+					}
+					potentiel = (l == 0);
+				}
 			}
 			if (potentiel) {
 
@@ -141,6 +126,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 					nouveau->precBest = noeudPrec;
 					nouveau->precAlt = NULL;
 					nouveau->existeAlt = noeudPrec->existeAlt;
+					nouveau->ajoutForce = noeudPrec->ajoutForce;
 					noeuds[i][nb] = nouveau;
 					++nb;
 				} else {
@@ -153,6 +139,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol) {
 						noeud->precAlt = noeudPrec;
 					}
 					noeud->existeAlt = true;
+					noeud->ajoutForce = noeudPrec->ajoutForce;
 				}
 			}
 		}

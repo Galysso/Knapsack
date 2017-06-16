@@ -17,6 +17,7 @@ struct Noeud {
 	bool existeAlt;				// vrai s'il existe au moins deux chemins allant de la racine à ce noeud
 	Noeud *precBest;			// noeud précédent donnant le meilleur chemin
 	Noeud *precAlt;				// noeud précédent alternatif au meilleur chemin
+	bool ajoutForce;
 };
 
 struct Solution {

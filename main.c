@@ -9,7 +9,7 @@
 int main() {
 	clock_t debutGraphe, finGraphe, debutRanking, finRanking;
 
-	Probleme *p = genererProbleme("A1.DAT");
+	Probleme *p = genererProbleme("exemple.DAT");
 	unsigned int *n;
 
 	debutGraphe = clock();
@@ -23,13 +23,13 @@ int main() {
 	}
 
 	debutRanking = clock();
-	int cpt = 1;
+	int cpt = 0;
 	while (tas->n > 0) {
-		//printf("%d: ", cpt);
-		genererSolutions(TAS_maximum(tas), tas, p);
-		//afficherSolution(TAS_maximum(tas), p->n);
-		TAS_retirerMax(tas);
 		++cpt;
+		printf("%d: ", cpt);
+		genererSolutions(TAS_maximum(tas), tas, p);
+		afficherSolution(TAS_maximum(tas), p->n);
+		TAS_retirerMax(tas);
 	}
 	finRanking = clock();
 
