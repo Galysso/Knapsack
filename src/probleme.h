@@ -1,7 +1,14 @@
 #ifndef PROBLEME_H
 #define PROBLEME_H
 
+#include "graphe.h"
+
+#include <stdbool.h>
+
+typedef struct Chemin Chemin;
+
 typedef struct Probleme Probleme;
+typedef struct Solution Solution;
 
 struct Probleme {
 	unsigned int n;					// nombre d'objets
@@ -15,6 +22,15 @@ struct Probleme {
 	unsigned int *poidsCumules2;
 };
 
+struct Solution {
+	unsigned int obj1;
+	unsigned int obj2;
+	unsigned int poids1;
+	unsigned int poids2;
+	bool *var;						// vrai si l'objet i est dans la solution, faux sinon
+};
+
 Probleme *genererProbleme(char *nomFichier);
+Solution *creerSolution(Probleme *p, Chemin *chemin);
 
 #endif

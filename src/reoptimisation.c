@@ -5,11 +5,11 @@
 
 #include <stdlib.h>
 
-void genererSolutions(Solution *sol, Tas *tas, Probleme *prob) {
+void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
 	int solVal = sol->val;
 	int n = prob->n;
 	Noeud *noeud;
-	Solution *nouvelleSol, *solCourante;
+	Chemin *nouvelleSol, *solCourante;
 	solCourante = sol;
 
 
@@ -18,10 +18,10 @@ void genererSolutions(Solution *sol, Tas *tas, Probleme *prob) {
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
 			deviations[i] = solCourante->deviation;
-			solCourante = (Solution*) solCourante->solution;
+			solCourante = (Chemin*) solCourante->chemin;
 		}
 
-		noeud = (Noeud*) solCourante->solution;
+		noeud = (Noeud*) solCourante->chemin;
 		--nDev;
 		while (nDev >= 0) {
 			while (n > deviations[nDev]) {
@@ -33,13 +33,13 @@ void genererSolutions(Solution *sol, Tas *tas, Probleme *prob) {
 			--nDev;
 		}
 	} else {
-		noeud = (Noeud*) solCourante->solution;
+		noeud = (Noeud*) solCourante->chemin;
 	}
 
 	while (noeud->existeAlt) {
 		if (noeud->precAlt) {
-			nouvelleSol = (Solution *) malloc(sizeof(Solution));
-			nouvelleSol->solution = sol;
+			nouvelleSol = (Chemin *) malloc(sizeof(Chemin));
+			nouvelleSol->chemin = sol;
 			if (noeud->val == noeud->precBest->val) {
 				nouvelleSol->val = solVal - noeud->precBest->val + noeud->precAlt->val + prob->coefficients1[n-1];
 			} else {

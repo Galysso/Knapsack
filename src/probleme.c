@@ -1,3 +1,4 @@
+#include "graphe.h"
 #include "probleme.h"
 
 #include <stdio.h>
@@ -62,4 +63,72 @@ Probleme *genererProbleme(char *nomFichier) {
 	}
 
 	return p;
+}
+
+Solution *creerSolution(Probleme *p, Chemin *chemin) {
+	Solution *sol = (Solution *) malloc(sizeof(Solution));
+	Noeud *noeud;
+	int n = p->n;
+	int i = n-1;
+
+	bool *var = (bool *) malloc(n*sizeof(bool));
+
+	if (chemin->deviation) {
+		int nDev = chemin->nDeviation;
+		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
+		for (int i = 0; i < nDev; ++i) {
+			deviations[i] = chemin->deviation;
+			chemin = (Chemin*) chemin->chemin;
+		}
+
+		noeud = (Noeud*) chemin->chemin;
+
+		sol->obj1 = noeud->obj1;
+		sol->obj2 = noeud->obj2;
+		sol->poids1 = noeud->poids1;
+		sol->poids2 = noeud->poids2;
+
+		--nDev;
+		while (nDev >= 0) {
+			while (n > deviations[nDev]) {
+				if (noeud->poids1 == noeud->precBest->poids1) {
+					var[i] = false;
+				} else {
+					var[i] = true;
+				}
+				--i;
+				noeud = noeud->precBest;
+				--n;
+			}
+			if (noeud->poids1 == noeud->precAlt->poids1) {
+				var[i] = false;
+			} else {
+				var[i] = true;
+			}
+			--i;
+			noeud = noeud->precAlt;
+			--n;
+			--nDev;
+		}
+	} else {
+		noeud = (Noeud*) chemin->chemin;
+		sol->obj1 = noeud->obj1;
+		sol->obj2 = noeud->obj2;
+		sol->poids1 = noeud->poids1;
+		sol->poids2 = noeud->poids2;
+	}
+
+	for ( ; n > 0; --n) {
+		if (noeud->poids1 == noeud->precBest->poids1) {
+			var[i] = false;
+		} else {
+			var[i] = true;
+		}
+		--i;
+		noeud = noeud->precBest;
+	}
+
+	sol->var = var;
+
+	return sol;
 }

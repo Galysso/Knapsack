@@ -3,6 +3,9 @@
 
 #include "probleme.h"
 
-void glpkSolutionsExtremes(Probleme *prob, unsigned int *bestX1, unsigned int *bestY1, unsigned int *bestX2, unsigned int *bestY2);
+#include <glpk.h>
+
+Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol);
+void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, unsigned int *nMax, unsigned int *nSol, Solution *sol1, Solution *sol2);
 
 #endif

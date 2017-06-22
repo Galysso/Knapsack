@@ -7,21 +7,21 @@
 
 Tas *TAS_initialiser(unsigned int taille) {
 	Tas *tas = malloc(sizeof(Tas));
-	tas->tab = malloc(taille*sizeof(Solution *));
+	tas->tab = malloc(taille*sizeof(Chemin *));
 	tas->taille = taille;
 	tas->n = 0;
 	return tas;
 }
 
-void TAS_ajouter(Tas *tas, Solution *val) {
+void TAS_ajouter(Tas *tas, Chemin *val) {
 	if (tas->n == tas->taille) {
 		tas->taille = 2*tas->taille;
-		tas->tab = realloc(tas->tab, tas->taille*sizeof(Solution *));
+		tas->tab = realloc(tas->tab, tas->taille*sizeof(Chemin *));
 	}
 	unsigned int indP;	// l'indice du père
 	unsigned int indC;	// l'indice de parcours
-	Solution *tmp;			// valeur temporaire pour échange
-	Solution **tab = tas->tab;
+	Chemin *tmp;			// valeur temporaire pour échange
+	Chemin **tab = tas->tab;
 	tab[tas->n] = val;	// on insère la valeur à la fin du tableau
 	indC = tas->n;
 	indP = (indC-1)/2;	// on récupère l'indice du père (= indC si c'est la racine)
@@ -41,11 +41,11 @@ void TAS_retirerMax(Tas *tas) {
 	int ind = 0;
 	unsigned int indFG;		// l'indice du fils gauche
 	unsigned int indFD;		// l'indice du fils droit
-	Solution *tmp;				// valeur temporaire pour échange
+	Chemin *tmp;				// valeur temporaire pour échange
 	bool fini = false;
 	tas->n = tas->n - 1;	// il y a un élément de moins dans le tas
 	int n = tas->n;
-	Solution **tab = tas->tab;
+	Chemin **tab = tas->tab;
 	tab[0] = tas->tab[n];	// on remplace l'élément à supprimer par le dernier du tas	
 
 	do {//TAS_afficher(tas);
@@ -82,12 +82,12 @@ void TAS_retirerMax(Tas *tas) {
 	} while (!fini);
 }
 
-Solution *TAS_maximum(Tas *tas) {
+Chemin *TAS_maximum(Tas *tas) {
 	return tas->tab[0];
 }
 
 void TAS_afficher(Tas *tas) {
-	Solution **tab = tas->tab;
+	Chemin **tab = tas->tab;
 	int n = tas->n;
 	int sautLigne = 1;
 	int curseur = 0;
