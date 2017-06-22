@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 typedef struct Probleme Probleme;
+typedef struct Solution Solution;
 
 typedef struct Noeud Noeud;
 typedef struct Chemin Chemin;
@@ -30,10 +31,9 @@ struct Chemin {
 	bool existeAlt;				// vrai si la solution admet au moins une réoptimisation
 };
 
-Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, unsigned int pond2);
-Chemin **initialiserSolutions(Noeud **noeuds, unsigned int n);
-void nouvellesSolutions(Chemin ***sol, Noeud **noeuds, unsigned int n);
-void afficherSolution(Chemin *sol, int n);
+Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solution *sol2);
+Chemin **initialiserChemins(Noeud **noeuds, unsigned int n);
+void afficherChemin(Chemin *sol, int n);
 void afficherGraphe(Noeud *racine, unsigned int n);
 
 #endif

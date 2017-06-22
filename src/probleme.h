@@ -20,6 +20,8 @@ struct Probleme {
 	unsigned int *poids2;
 	unsigned int *poidsCumules1;
 	unsigned int *poidsCumules2;
+	unsigned int *coefCumules1;
+	unsigned int *coefCumules2;
 };
 
 struct Solution {

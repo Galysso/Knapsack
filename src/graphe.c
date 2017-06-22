@@ -5,9 +5,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, unsigned int pond2) {
+Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solution *sol2) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
+
+	unsigned int lambda1 = sol1->obj2 - sol2->obj2;
+	unsigned int lambda2 = sol2->obj1 - sol1->obj1;
 
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
@@ -37,7 +40,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, uns
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
 			unsigned int k = 0;
-			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
+			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)/* && (noeudPrec->obj1 + p->coefCumules1[i-1] > sol1->obj1) && (noeudPrec->obj2 + p->coefCumules2[i-1] > sol2->obj2)*/) {
 				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1 + p->poids1[i-1]) || (noeuds[i][k]->poids2 != noeudPrec->poids2 + p->poids2[i-1]))) {
 					++k;
 				}
@@ -45,7 +48,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, uns
 					nouveau = (Noeud *) malloc(sizeof(Noeud));
 					nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
 					nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
-					nouveau->val = noeudPrec->val + pond1*p->coefficients1[i-1] + pond2*p->coefficients2[i-1];
+					nouveau->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
 					nouveau->poids1 = noeudPrec->poids1 + p->poids1[i-1];
 					nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
 					nouveau->precBest = noeudPrec;
@@ -56,8 +59,8 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, uns
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
-					if (noeud->val < noeudPrec->val + pond1*p->coefficients1[i-1] + pond2*p->coefficients2[i-1]) {
-						noeud->val = noeudPrec->val + pond1*p->coefficients1[i-1] + pond2*p->coefficients2[i-1];
+					if (noeud->val < noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1]) {
+						noeud->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
 						nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
 						nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
 						noeud->precAlt = noeuds[i][k]->precBest;
@@ -69,36 +72,38 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, uns
 					noeud->ajoutForce = noeudPrec->ajoutForce;
 				}
 			}
-			k = 0;
-			while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
-				++k;
-			}
-			if (k == nb) {
-				nouveau = (Noeud *) malloc(sizeof(Noeud));
-				nouveau->val = noeudPrec->val;
-				nouveau->poids1 = noeudPrec->poids1;
-				nouveau->poids2 = noeudPrec->poids2;
-				nouveau->obj1 = noeudPrec->obj1;
-				nouveau->obj2 = noeudPrec->obj2;
-				nouveau->precBest = noeudPrec;
-				nouveau->precAlt = NULL;
-				nouveau->existeAlt = noeudPrec->existeAlt;
-				nouveau->ajoutForce = noeudPrec->ajoutForce;
-				noeuds[i][nb] = nouveau;
-				++nb;
-			} else {
-				noeud = noeuds[i][k];
-				if (noeud->val < noeudPrec->val) {
-					noeud->val = noeudPrec->val;
+			if ((noeudPrec->obj1 + p->coefCumules1[i] > sol1->obj1) && (noeudPrec->obj2 + p->coefCumules2[i] > sol2->obj2)) {
+				k = 0;
+				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
+					++k;
+				}
+				if (k == nb) {
+					nouveau = (Noeud *) malloc(sizeof(Noeud));
+					nouveau->val = noeudPrec->val;
+					nouveau->poids1 = noeudPrec->poids1;
+					nouveau->poids2 = noeudPrec->poids2;
 					nouveau->obj1 = noeudPrec->obj1;
 					nouveau->obj2 = noeudPrec->obj2;
-					noeud->precAlt = noeuds[i][k]->precBest;
-					noeud->precBest = noeudPrec;
+					nouveau->precBest = noeudPrec;
+					nouveau->precAlt = NULL;
+					nouveau->existeAlt = noeudPrec->existeAlt;
+					nouveau->ajoutForce = noeudPrec->ajoutForce;
+					noeuds[i][nb] = nouveau;
+					++nb;
 				} else {
-					noeud->precAlt = noeudPrec;
+					noeud = noeuds[i][k];
+					if (noeud->val < noeudPrec->val) {
+						noeud->val = noeudPrec->val;
+						nouveau->obj1 = noeudPrec->obj1;
+						nouveau->obj2 = noeudPrec->obj2;
+						noeud->precAlt = noeuds[i][k]->precBest;
+						noeud->precBest = noeudPrec;
+					} else {
+						noeud->precAlt = noeudPrec;
+					}
+					noeud->existeAlt = true;
+					noeud->ajoutForce = noeudPrec->ajoutForce;
 				}
-				noeud->existeAlt = true;
-				noeud->ajoutForce = noeudPrec->ajoutForce;
 			}
 		}
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
@@ -109,17 +114,17 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, unsigned int pond1, uns
 	return noeuds;
 }
 
-Chemin **initialiserSolutions(Noeud **noeuds, unsigned int n) {
-	Chemin **sols = (Chemin **) malloc(n*sizeof(Chemin *));
+Chemin **initialiserChemins(Noeud **noeuds, unsigned int n) {
+	Chemin **chemins = (Chemin **) malloc(n*sizeof(Chemin *));
 	for (int i = 0; i < n; ++i) {
-		sols[i] = (Chemin *) malloc(sizeof(Chemin));
-		sols[i]->chemin = noeuds[i];
-		sols[i]->val = noeuds[i]->val;
-		sols[i]->deviation = 0;
-		sols[i]->existeAlt = noeuds[i]->existeAlt;
-		sols[i]->nDeviation = 0;
+		chemins[i] = (Chemin *) malloc(sizeof(Chemin));
+		chemins[i]->chemin = noeuds[i];
+		chemins[i]->val = noeuds[i]->val;
+		chemins[i]->deviation = 0;
+		chemins[i]->existeAlt = noeuds[i]->existeAlt;
+		chemins[i]->nDeviation = 0;
 	}
-	return sols;
+	return chemins;
 }
 
 void afficherGraphe(Noeud *node, unsigned int n) {
@@ -133,19 +138,19 @@ void afficherGraphe(Noeud *node, unsigned int n) {
 	}
 }
 
-void afficherSolution(Chemin *sol, int n) {
+void afficherChemin(Chemin *chem, int n) {
 	Noeud *noeud;
-	printf("[%d]: ", sol->val);
+	printf("[%d]: ", chem->val);
 
-	if (sol->deviation) {
-		int nDev = sol->nDeviation;
+	if (chem->deviation) {
+		int nDev = chem->nDeviation;
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
-			deviations[i] = sol->deviation;
-			sol = (Chemin*) sol->chemin;
+			deviations[i] = chem->deviation;
+			chem = (Chemin*) chem->chemin;
 		}
 
-		noeud = (Noeud*) sol->chemin;
+		noeud = (Noeud*) chem->chemin;
 		--nDev;
 		while (nDev >= 0) {
 			while (n > deviations[nDev]) {
@@ -159,7 +164,7 @@ void afficherSolution(Chemin *sol, int n) {
 			--nDev;
 		}
 	} else {
-		noeud = (Noeud*) sol->chemin;
+		noeud = (Noeud*) chem->chemin;
 	}
 
 	for ( ; n > 0; --n) {
