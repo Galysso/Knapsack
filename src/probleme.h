@@ -22,6 +22,8 @@ struct Probleme {
 	unsigned int *poidsCumules2;
 	unsigned int *coefCumules1;
 	unsigned int *coefCumules2;
+	unsigned int lambda1;
+	unsigned int lambda2;
 };
 
 struct Solution {
@@ -33,6 +35,7 @@ struct Solution {
 };
 
 Probleme *genererProbleme(char *nomFichier);
+Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
 
 #endif

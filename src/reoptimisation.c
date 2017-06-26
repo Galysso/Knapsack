@@ -5,23 +5,24 @@
 
 #include <stdlib.h>
 
-void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
-	int solVal = sol->val;
+void genererReoptimisations(Chemin *chem, Tas *tas, Probleme *prob) {
+	unsigned int lambda1 = prob->lambda1;
+	unsigned int lambda2 = prob->lambda2;
+	int solVal = chem->val;
 	int n = prob->n;
 	Noeud *noeud;
-	Chemin *nouvelleSol, *solCourante;
-	solCourante = sol;
+	Chemin *nouveauChemin, *cheminCourant;
+	cheminCourant = chem;
 
-
-	if (solCourante->deviation) {
-		int nDev = solCourante->nDeviation;
+	if (cheminCourant->deviation) {
+		int nDev = cheminCourant->nDeviation;
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
-			deviations[i] = solCourante->deviation;
-			solCourante = (Chemin*) solCourante->chemin;
+			deviations[i] = cheminCourant->deviation;
+			cheminCourant = (Chemin*) cheminCourant->chemin;
 		}
 
-		noeud = (Noeud*) solCourante->chemin;
+		noeud = (Noeud*) cheminCourant->chemin;
 		--nDev;
 		while (nDev >= 0) {
 			while (n > deviations[nDev]) {
@@ -33,22 +34,22 @@ void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
 			--nDev;
 		}
 	} else {
-		noeud = (Noeud*) solCourante->chemin;
+		noeud = (Noeud*) cheminCourant->chemin;
 	}
 
 	while (noeud->existeAlt) {
 		if (noeud->precAlt) {
-			nouvelleSol = (Chemin *) malloc(sizeof(Chemin));
-			nouvelleSol->chemin = sol;
+			nouveauChemin = (Chemin *) malloc(sizeof(Chemin));
+			nouveauChemin->chemin = chem;
 			if (noeud->val == noeud->precBest->val) {
-				nouvelleSol->val = solVal - noeud->precBest->val + noeud->precAlt->val + prob->coefficients1[n-1];
+				nouveauChemin->val = solVal - noeud->precBest->val + noeud->precAlt->val + lambda1*prob->coefficients1[n-1] +lambda2*prob->coefficients2[n-1];
 			} else {
-				nouvelleSol->val = solVal - noeud->precBest->val + noeud->precAlt->val - prob->coefficients1[n-1];
+				nouveauChemin->val = solVal - noeud->/*precBest->*/val + noeud->precAlt->val;// - prob->coefficients1[n-1];
 			}
-			nouvelleSol->deviation = n;
-			nouvelleSol->nDeviation = sol->nDeviation + 1;
-			nouvelleSol->existeAlt = noeud->precAlt->existeAlt;
-			TAS_ajouter(tas, nouvelleSol);
+			nouveauChemin->deviation = n;
+			nouveauChemin->nDeviation = chem->nDeviation + 1;
+			nouveauChemin->existeAlt = noeud->precAlt->existeAlt;
+			TAS_ajouter(tas, nouveauChemin);
 		}
 		noeud = noeud->precBest;
 		--n;

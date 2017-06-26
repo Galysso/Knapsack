@@ -5,6 +5,6 @@
 #include "graphe.h"
 #include "tas.h"
 
-void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob);
+void genererReoptimisations(Chemin *chem, Tas *tas, Probleme *prob);
 
 #endif
