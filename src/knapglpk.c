@@ -6,9 +6,9 @@
 #include <stdbool.h>
 #include <assert.h>
 
-Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol) {
-	unsigned int nMax = prob->n*prob->n;
-	Solution **sols = (Solution **) malloc(nMax*sizeof(Solution *));
+Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned int *nMax) {
+	*nMax = prob->n*prob->n;
+	Solution **sols = (Solution **) malloc(*nMax*sizeof(Solution *));
 	Solution *sol;
 	*nSol = 0;
 
@@ -51,9 +51,9 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol) {
 	glp_intopt(glpProb, NULL);
 
 
-	if (*nSol == nMax) {
-		nMax = 2*(nMax);
-		sols = (Solution **) realloc(sols, nMax*sizeof(Solution *));
+	if (*nSol == *nMax) {
+		*nMax = 2*(*nMax);
+		sols = (Solution **) realloc(sols, *nMax*sizeof(Solution *));
 	}
 	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
@@ -82,9 +82,9 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol) {
 	glp_simplex(glpProb, NULL);
 	glp_intopt(glpProb, NULL);
 
-	if (*nSol == nMax) {
-		nMax = 2*(nMax);
-		sols = (Solution **) realloc(sols, nMax*sizeof(Solution *));
+	if (*nSol == *nMax) {
+		*nMax = 2*(*nMax);
+		sols = (Solution **) realloc(sols, *nMax*sizeof(Solution *));
 	}
 	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
@@ -106,7 +106,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol) {
 	sols[1] = sol;
 
 	if ((sols[1]->obj1 < sols[0]->obj1) && (sols[1]->obj2 > sols[0]->obj2)) {
-		glpkDichotomieSupportees(prob, glpProb, &sols, &nMax, nSol, sols[1], sols[0]);
+		glpkDichotomieSupportees(prob, glpProb, &sols, nMax, nSol, sols[1], sols[0]);
 	}
 
 	// on trie les solutions selon l'objectif 2

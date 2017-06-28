@@ -25,6 +25,8 @@ struct Noeud {
 
 struct Chemin {
 	void *chemin;				// type Chemin s'il y a une déviation, type Noeud sinon
+	unsigned int obj1;
+	unsigned int obj2;
 	unsigned int val;			// valeur de la fonction objectif de la somme pondérée
 	unsigned int deviation;		// indique l'endroit où est la déviation, 0 sinon
 	unsigned int nDeviation;	// donne le nombre de fois que le chemin a été réoptimisé

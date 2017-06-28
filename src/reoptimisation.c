@@ -5,24 +5,26 @@
 
 #include <stdlib.h>
 
-void genererReoptimisations(Chemin *chem, Tas *tas, Probleme *prob) {
-	unsigned int lambda1 = prob->lambda1;
-	unsigned int lambda2 = prob->lambda2;
-	int solVal = chem->val;
+void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
+	//printf("val=%d\n", sol->val);
+	unsigned int solVal = sol->val;
+	unsigned int solObj1 = sol->obj1;
+	unsigned int solObj2 = sol->obj2;
 	int n = prob->n;
 	Noeud *noeud;
-	Chemin *nouveauChemin, *cheminCourant;
-	cheminCourant = chem;
+	Chemin *nouvelleSol, *solCourante;
+	solCourante = sol;
 
-	if (cheminCourant->deviation) {
-		int nDev = cheminCourant->nDeviation;
+
+	if (solCourante->nDeviation > 0) {
+		int nDev = solCourante->nDeviation;
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int i = 0; i < nDev; ++i) {
-			deviations[i] = cheminCourant->deviation;
-			cheminCourant = (Chemin*) cheminCourant->chemin;
+			deviations[i] = solCourante->deviation;
+			solCourante = (Chemin*) solCourante->chemin;
 		}
 
-		noeud = (Noeud*) cheminCourant->chemin;
+		noeud = (Noeud*) solCourante->chemin;
 		--nDev;
 		while (nDev >= 0) {
 			while (n > deviations[nDev]) {
@@ -34,22 +36,29 @@ void genererReoptimisations(Chemin *chem, Tas *tas, Probleme *prob) {
 			--nDev;
 		}
 	} else {
-		noeud = (Noeud*) cheminCourant->chemin;
+		noeud = (Noeud*) solCourante->chemin;
 	}
 
 	while (noeud->existeAlt) {
 		if (noeud->precAlt) {
-			nouveauChemin = (Chemin *) malloc(sizeof(Chemin));
-			nouveauChemin->chemin = chem;
+			nouvelleSol = (Chemin *) malloc(sizeof(Chemin));
+			nouvelleSol->chemin = sol;
 			if (noeud->val == noeud->precBest->val) {
-				nouveauChemin->val = solVal - noeud->precBest->val + noeud->precAlt->val + lambda1*prob->coefficients1[n-1] +lambda2*prob->coefficients2[n-1];
+				nouvelleSol->val = solVal - noeud->val + noeud->precAlt->val + prob->lambda1*prob->coefficients1[n-1] + prob->lambda2*prob->coefficients2[n-1];
+				nouvelleSol->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1 + prob->coefficients1[n-1];
+				nouvelleSol->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2 + prob->coefficients2[n-1];
 			} else {
-				nouveauChemin->val = solVal - noeud->/*precBest->*/val + noeud->precAlt->val;// - prob->coefficients1[n-1];
+				nouvelleSol->val = solVal - noeud->val + noeud->precAlt->val;
+				nouvelleSol->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1;
+				nouvelleSol->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2;
 			}
-			nouveauChemin->deviation = n;
-			nouveauChemin->nDeviation = chem->nDeviation + 1;
-			nouveauChemin->existeAlt = noeud->precAlt->existeAlt;
-			TAS_ajouter(tas, nouveauChemin);
+			nouvelleSol->deviation = n;
+			//printf("n=%d\n", n);
+			nouvelleSol->nDeviation = sol->nDeviation + 1;
+			nouvelleSol->existeAlt = noeud->precAlt->existeAlt;
+			TAS_ajouter(tas, nouvelleSol);
+			//printf("Sol (%d,%d)  = %d\n", creerSolution(prob, nouvelleSol)->obj1, creerSolution(prob, nouvelleSol)->obj2, prob->lambda1*creerSolution(prob, nouvelleSol)->obj1 + prob->lambda2*creerSolution(prob, nouvelleSol)->obj2);
+			//printf("Chem (%d,%d) = %d\n", nouvelleSol->obj1, nouvelleSol->obj2, nouvelleSol->val);
 		}
 		noeud = noeud->precBest;
 		--n;

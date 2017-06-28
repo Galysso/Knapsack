@@ -151,24 +151,91 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 
 Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
+	Noeud *noeud, *noeudPrec;
+	int n = p->n;
+
+	bool *var = (bool *) malloc(n*sizeof(bool));
+
+	sol->obj1 = 0;
+	sol->obj2 = 0;
+	sol->poids1 = 0;
+	sol->poids2 = 0;
+
+	if (chemin->nDeviation > 0) {
+		//printf("COCORICO\n");
+		int nDev = chemin->nDeviation;
+		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
+		for (int j = 0; j < nDev; ++j) {
+			deviations[j] = chemin->deviation;
+			chemin = (Chemin*) chemin->chemin;
+			//printf("dev=%d\n", deviations[j]);
+		}
+		noeudPrec = (Noeud*) chemin->chemin;
+
+		//printf("nDev=%d\n", nDev);
+		--nDev;
+		for (int i = n-1; i >= 0; --i) {
+			noeud = noeudPrec;
+			if ((nDev >= 0) && (deviations[nDev] == i+1)) {
+				noeudPrec = noeud->precAlt;
+				--nDev;
+			} else {
+				noeudPrec = noeud->precBest;
+			}
+			if (noeud->poids1 != noeudPrec->poids1) {
+				sol->obj1 = sol->obj1 + p->coefficients1[i];
+				sol->obj2 = sol->obj2 + p->coefficients2[i];
+				sol->poids1 = sol->poids1 + p->poids1[i];
+				sol->poids2 = sol->poids2 + p->poids2[i];
+				var[i] = true;
+			} else {
+				var[i] = false;
+			}
+		}
+	} else {
+		//printf("GRAGOGLOBOPS\n");
+		noeudPrec = (Noeud*) chemin->chemin;
+		for (int i = n-1; i > 0; --i) {
+			noeud = noeudPrec;
+			noeudPrec = noeud->precBest;
+			if (noeud->poids1 != noeudPrec->poids1) {
+				sol->obj1 = sol->obj1 + p->coefficients1[i];
+				sol->obj2 = sol->obj2 + p->coefficients2[i];
+				sol->poids1 = sol->poids1 + p->poids1[i];
+				sol->poids2 = sol->poids2 + p->poids2[i];
+				var[i] = true;
+			} else {
+				var[i] = false;
+			}
+		}
+	}
+
+	sol->var = var;
+
+	return sol;
+}
+
+/*Solution *creerSolution(Probleme *p, Chemin *chemin) {
+	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud;
 	int n = p->n;
 	int i = n-1;
 
 	bool *var = (bool *) malloc(n*sizeof(bool));
 
+	sol->obj1 = 0;
+	sol->obj2 = 0;
+
 	if (chemin->deviation) {
 		int nDev = chemin->nDeviation;
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
-		for (int i = 0; i < nDev; ++i) {
-			deviations[i] = chemin->deviation;
+		for (int j = 0; j < nDev; ++j) {
+			deviations[j] = chemin->deviation;
 			chemin = (Chemin*) chemin->chemin;
 		}
 
 		noeud = (Noeud*) chemin->chemin;
 
-		sol->obj1 = noeud->obj1;
-		sol->obj2 = noeud->obj2;
 		sol->poids1 = noeud->poids1;
 		sol->poids2 = noeud->poids2;
 
@@ -179,6 +246,8 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 					var[i] = false;
 				} else {
 					var[i] = true;
+					sol->obj1 = sol->obj1 + p->coefficients1[i];
+					sol->obj2 = sol->obj2 + p->coefficients2[i];
 				}
 				--i;
 				noeud = noeud->precBest;
@@ -188,6 +257,8 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				var[i] = false;
 			} else {
 				var[i] = true;
+				sol->obj1 = sol->obj1 + p->coefficients1[i];
+				sol->obj2 = sol->obj2 + p->coefficients2[i];
 			}
 			--i;
 			noeud = noeud->precAlt;
@@ -196,8 +267,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 		}
 	} else {
 		noeud = (Noeud*) chemin->chemin;
-		sol->obj1 = noeud->obj1;
-		sol->obj2 = noeud->obj2;
+
 		sol->poids1 = noeud->poids1;
 		sol->poids2 = noeud->poids2;
 	}
@@ -206,6 +276,8 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 		if (noeud->poids1 == noeud->precBest->poids1) {
 			var[i] = false;
 		} else {
+			sol->obj1 = sol->obj1 + p->coefficients1[i];
+			sol->obj2 = sol->obj2 + p->coefficients2[i];
 			var[i] = true;
 		}
 		--i;
@@ -215,4 +287,4 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	sol->var = var;
 
 	return sol;
-}
+}*/
