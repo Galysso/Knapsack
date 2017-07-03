@@ -107,7 +107,6 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 			}
 		}
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
-		//printf("%d : %d\n", i, nb);
 		(*nSol)[i] = nb;
 	}
 

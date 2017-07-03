@@ -6,6 +6,10 @@
 #include <stdlib.h>
 
 void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
+	/*if ((sol->obj1 == 2431) && (sol->obj2 == 3321)) {
+		printf("LE VERT EST REOPTIMISE\n");
+	}*/
+
 	//printf("val=%d\n", sol->val);
 	unsigned int solVal = sol->val;
 	unsigned int solObj1 = sol->obj1;
@@ -56,6 +60,12 @@ void genererSolutions(Chemin *sol, Tas *tas, Probleme *prob) {
 			//printf("n=%d\n", n);
 			nouvelleSol->nDeviation = sol->nDeviation + 1;
 			nouvelleSol->existeAlt = noeud->precAlt->existeAlt;
+			/*if ((nouvelleSol->obj1 == 2431) && (nouvelleSol->obj2 == 3321)) {
+				printf("LE VERT EST TROUVE PAR REOPTIMISATION ET AJOUTE\n");
+			}
+			if ((nouvelleSol->obj1 == 2428) && (nouvelleSol->obj2 ==3319)) {
+				printf("LE ROUGE EST TROUVE PAR REOPTIMISATION ET AJOUTE\n");
+			}*/
 			TAS_ajouter(tas, nouvelleSol);
 			//printf("Sol (%d,%d)  = %d\n", creerSolution(prob, nouvelleSol)->obj1, creerSolution(prob, nouvelleSol)->obj2, prob->lambda1*creerSolution(prob, nouvelleSol)->obj1 + prob->lambda2*creerSolution(prob, nouvelleSol)->obj2);
 			//printf("Chem (%d,%d) = %d\n", nouvelleSol->obj1, nouvelleSol->obj2, nouvelleSol->val);
