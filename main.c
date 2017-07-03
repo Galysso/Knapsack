@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+
+// Ajoute une solution à la liste des solutions efficaces
 void ajouterSolution(Solution ***solutions, Solution *sol, unsigned int *nbSol, unsigned int *nbSolMax) {
 	if (*nbSol == *nbSolMax) {
 		*nbSolMax = (*nbSolMax)*(*nbSolMax);
@@ -16,9 +18,8 @@ void ajouterSolution(Solution ***solutions, Solution *sol, unsigned int *nbSol, 
 	*nbSol = *nbSol + 1;
 }
 
+// Calcule la borne minimale actuelle
 unsigned int meilleureBorne(Solution **solutionsLB, unsigned int nbSol, Probleme *p) {
-	//printf("solution borne : %d,%d\n", sol->obj1, sol->obj2);
-	// calcul de la nouvelle borne
 	unsigned int lambda1 = p->lambda1;
 	unsigned int lambda2 = p->lambda2;
 	unsigned int LB, LBprim;
@@ -38,6 +39,8 @@ unsigned int meilleureBorne(Solution **solutionsLB, unsigned int nbSol, Probleme
 	return LB;
 }
 
+// Ajoute la solution à la liste des points définissant les points de Nadir locaux
+// Conserve l'ordre lexicographique des solutions
 void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, unsigned int *nbSol, unsigned int *nbSolMax) {
 	unsigned int min, ind, max;
 	Solution *solLB;
@@ -71,6 +74,7 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, unsigned int *nbS
 	*nbSol = *nbSol + 1;
 }
 
+// Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
 bool estEfficace(Solution **solutions, unsigned int deb, unsigned int fin, Solution *sol) {
 	while ((deb < fin) && ((solutions[deb]->obj1 < sol->obj1) || (solutions[deb]->obj2 < sol->obj2))) {
 		++deb;
@@ -78,6 +82,7 @@ bool estEfficace(Solution **solutions, unsigned int deb, unsigned int fin, Solut
 	return (deb == fin);
 }
 
+// Fuite de mémoire : les chemins ne sont pas désalloués
 Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 	*nbSol = 0;
 	unsigned int nbSolMax = p->n*p->n;
@@ -127,19 +132,18 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 			Chemin *chem = TAS_maximum(tas);
 			TAS_retirerMax(tas);
 			Solution *sol = creerSolution(p, chem);
-			if (/*(sol->obj1 < solSup2->obj1) && (sol->obj2 > solSup1->obj2) && */estEfficace(resultat, deb, *nbSol, sol)) {
+			if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, deb, *nbSol, sol)) {
 				ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
 				ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
 				newLB = meilleureBorne(solutionsLB, nbSolLB, p);
-				/*printf("LB=%d\n", LB);
-				printf("newLB=%d\n", newLB);*/
 				if (newLB > LB) {
-					printf("update LB\n");
 					LB = newLB;
 				}
 			}
 			genererSolutions(chem, tas, p);
 		}
+
+		desallouerGraphe(nNoeuds, graphe, p->n+1);
 	}
 
 	return resultat;
@@ -155,22 +159,8 @@ int main() {
 	Solution **nonDominated = trouverSolutions(p, &nbSol);
 	fin = clock();
 
-	/*printf("%d solutions:\n", nbSol);
-	for (int i = 0; i < nbSol; ++i) {
-		printf("(%d,%d) (%d)", nonDominated[i]->obj1, nonDominated[i]->obj2, nonDominated[i]->poids1);
-		for (int j = 0; j < p->n; ++j) {
-			printf("%d", nonDominated[i]->var[j]);
-		}
-		printf("\n");
-	}*/
 
-
-
-
-
-
-
-
+	// On trie les solutions efficaces selon l'ordre lexicographique
 	bool changement;
 	do {
 		changement = false;

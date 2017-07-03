@@ -109,7 +109,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 		glpkDichotomieSupportees(prob, glpProb, &sols, nMax, nSol, sols[1], sols[0]);
 	}
 
-	// on trie les solutions selon l'objectif 2
+	// on trie les solutions selon l'ordre lexicographique
 	bool changement;
 	do {
 		changement = false;
@@ -125,6 +125,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 
 	return sols;
 }
+
 
 void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, unsigned int *nMax, unsigned int *nSol, Solution *sol1, Solution *sol2) {
 	unsigned int lambda1, lambda2;

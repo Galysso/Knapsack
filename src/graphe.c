@@ -11,6 +11,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 
 	unsigned int lambda1 = p->lambda1;
 	unsigned int lambda2 = p->lambda2;
+	unsigned int LB = lambda1*(sol1->obj1+1) + lambda2*(sol2->obj2+1);
 
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
@@ -33,24 +34,31 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 	*nSol = malloc((p->n+1)*sizeof(unsigned int));
 	(*nSol)[0] = 1;
 
+	// Pour chaque objet du sac
 	for (int i = 1; i <= p->n; ++i) {
 		nbPrec = nb;
 		nb = 0;
+		// On alloue deux fois le nombre de noeuds obtenus précédemment
 		noeuds[i] = (Noeud **) malloc(2*nbPrec*sizeof(Noeud *));
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
 			unsigned int k = 0;
-			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)/* && (noeudPrec->obj1 + p->coefCumules1[i-1] > sol1->obj1) && (noeudPrec->obj2 + p->coefCumules2[i-1] > sol2->obj2)*/) {
-				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1 + p->poids1[i-1]) || (noeuds[i][k]->poids2 != noeudPrec->poids2 + p->poids2[i-1]))) {
+			// Si l'objet entre dans le sac
+			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
+				unsigned int futurP1 = noeudPrec->poids1 + p->poids1[i-1];
+				unsigned int futurP2 = noeudPrec->poids2 + p->poids2[i-1];
+				// On regarde si le noeud à ajouter existe déjà
+				while ((k < nb) && ((noeuds[i][k]->poids1 != futurP1) || (noeuds[i][k]->poids2 != futurP2))) {
 					++k;
 				}
+				// S'il n'existe pas on le crée
 				if (k == nb) {
 					nouveau = (Noeud *) malloc(sizeof(Noeud));
 					nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
 					nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
 					nouveau->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
-					nouveau->poids1 = noeudPrec->poids1 + p->poids1[i-1];
-					nouveau->poids2 = noeudPrec->poids2 + p->poids2[i-1];
+					nouveau->poids1 = futurP1;
+					nouveau->poids2 = futurP2;
 					nouveau->precBest = noeudPrec;
 					nouveau->precAlt = NULL;
 					nouveau->existeAlt = noeudPrec->existeAlt;
@@ -59,12 +67,14 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
+					// S'il existe et que le noeud précédent est meilleur on le modifie
 					if (noeud->val < noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1]) {
 						noeud->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
 						noeud->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
 						noeud->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
 						noeud->precAlt = noeuds[i][k]->precBest;
 						noeud->precBest = noeudPrec;
+					// Sinon on ajoute le noeud précédent en alternatif
 					} else {
 						noeud->precAlt = noeudPrec;
 					}
@@ -72,11 +82,15 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 					noeud->ajoutForce = noeudPrec->ajoutForce;
 				}
 			}
-			if (/*(noeudPrec->obj1 + p->coefCumules1[i] > sol1->obj1) && (noeudPrec->obj2 + p->coefCumules2[i] > sol2->obj2)*/true) {
+			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
+			// Alors on crée le noeud
+			if ((noeudPrec->val + lambda1*(p->coefCumules1[i]+1) + lambda2*p->coefCumules2[i]+1) >= LB) {
 				k = 0;
+				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
 					++k;
 				}
+				// S'il n'existe pas on le crée
 				if (k == nb) {
 					nouveau = (Noeud *) malloc(sizeof(Noeud));
 					nouveau->val = noeudPrec->val;
@@ -92,12 +106,14 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
+					// S'il existe et que le noeud précédent est meilleur on le modifie
 					if (noeud->val < noeudPrec->val) {
 						noeud->val = noeudPrec->val;
 						noeud->obj1 = noeudPrec->obj1;
 						noeud->obj2 = noeudPrec->obj2;
 						noeud->precAlt = noeuds[i][k]->precBest;
 						noeud->precBest = noeudPrec;
+					// Sinon on ajoute le noeud précédent en alternatif
 					} else {
 						noeud->precAlt = noeudPrec;
 					}
@@ -106,6 +122,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 				}
 			}
 		}
+		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
 	}
@@ -113,6 +130,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 	return noeuds;
 }
 
+// Créé les chemins initiaux non modifiés
 Chemin **initialiserChemins(Noeud **noeuds, unsigned int n) {
 	Chemin **chemins = (Chemin **) malloc(n*sizeof(Chemin *));
 	for (int i = 0; i < n; ++i) {
@@ -127,6 +145,17 @@ Chemin **initialiserChemins(Noeud **noeuds, unsigned int n) {
 		chem->obj2 = noeuds[i]->obj2;
 	}
 	return chemins;
+}
+
+// Libère la mémoire allouée aux noeuds (après traitement d'un triangle)
+void desallouerGraphe(unsigned int *nSol, Noeud ***noeuds, unsigned int n) {
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < nSol[i]; ++j) {
+			free(noeuds[i][j]);
+		}
+		free(noeuds[i]);
+	}
+	free(noeuds);
 }
 
 void afficherGraphe(Noeud *node, unsigned int n) {

@@ -41,8 +41,6 @@ Probleme *genererProbleme(char *nomFichier) {
 			assert(fscanf(fichier, "%d", &poids1[i]));
 			assert(fscanf(fichier, "%d", &coef2[i]));
 			assert(fscanf(fichier, "%d", &poids2[i]));
-			/*poidsCumules1[i] = poidsCumules1[i-1] + poids1[i];
-			poidsCumules2[i] = poidsCumules2[i-1] + poids2[i];*/
 		}
 
 		poidsCumules1[nbVariable] = 0;
@@ -149,6 +147,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 	return p;
 }
 
+// Transforme un chemin en un vecteur de booléens correspondant à la solution
 Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud, *noeudPrec;
@@ -156,25 +155,20 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 
 	bool *var = (bool *) malloc(n*sizeof(bool));
 
-	unsigned int objectif1 = chemin->obj1;
-	unsigned int objectif2 = chemin->obj2;
-	unsigned int obj1 = 0;//chemin->obj1;
-	unsigned int obj2 = 0;//chemin->obj2;
-	unsigned int poids1 = 0;//chemin->poids1;
-	unsigned int poids2 = 0;//chemin->poids2;
+	sol->obj1 = chemin->obj1;
+	sol->obj2 = chemin->obj2;
+	unsigned int poids1 = 0;
+	unsigned int poids2 = 0;
 
 	if (chemin->nDeviation > 0) {
-		//printf("COCORICO\n");
 		int nDev = chemin->nDeviation;
 		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
 		for (int j = 0; j < nDev; ++j) {
 			deviations[j] = chemin->deviation;
 			chemin = (Chemin*) chemin->chemin;
-			//printf("dev=%d\n", deviations[j]);
 		}
 		noeudPrec = (Noeud*) chemin->chemin;
 
-		//printf("nDev=%d\n", nDev);
 		--nDev;
 		for (int i = n-1; i >= 0; --i) {
 			noeud = noeudPrec;
@@ -185,8 +179,6 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				noeudPrec = noeud->precBest;
 			}
 			if (noeud->poids1 != noeudPrec->poids1) {
-				obj1 = obj1 + p->coefficients1[i];
-				obj2 = obj2 + p->coefficients2[i];
 				poids1 = poids1 + p->poids1[i];
 				poids2 = poids2 + p->poids2[i];
 				var[i] = true;
@@ -194,17 +186,12 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				var[i] = false;
 			}
 		}
-		/*obj1 = objectif1;
-		obj2 = objectif2;*/
 	} else {
-		//printf("GRAGOGLOBOPS\n");
 		noeudPrec = (Noeud*) chemin->chemin;
 		for (int i = n-1; i >= 0; --i) {
 			noeud = noeudPrec;
 			noeudPrec = noeud->precBest;
 			if (noeud->poids1 != noeudPrec->poids1) {
-				obj1 = obj1 + p->coefficients1[i];
-				obj2 = obj2 + p->coefficients2[i];
 				poids1 = poids1 + p->poids1[i];
 				poids2 = poids2 + p->poids2[i];
 				var[i] = true;
@@ -212,17 +199,11 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				var[i] = false;
 			}
 		}
-		/*obj1 = objectif1;
-		obj2 = objectif2;*/
 	}
 
 	sol->poids1 = poids1;
 	sol->poids2 = poids2;
-	sol->obj1 = obj1;
-	sol->obj2 = obj2;
 	sol->var = var;
-
-	assert((objectif1 == sol->obj1) && (objectif2 == sol->obj2));
 
 	return sol;
 }

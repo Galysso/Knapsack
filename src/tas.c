@@ -48,7 +48,8 @@ void TAS_retirerMax(Tas *tas) {
 	Chemin **tab = tas->tab;
 	tab[0] = tas->tab[n];	// on remplace l'élément à supprimer par le dernier du tas	
 
-	do {//TAS_afficher(tas);
+	// Puis on redescent la racine à une position correcte avec des swaps avec ses fils
+	do {
 		indFG = 2*ind + 1;
 		indFD = 2*ind + 2;
 		if (indFD < n) {

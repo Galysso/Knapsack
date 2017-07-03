@@ -35,6 +35,7 @@ struct Solution {
 };
 
 Probleme *genererProbleme(char *nomFichier);
+Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
 
 #endif

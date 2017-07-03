@@ -35,6 +35,7 @@ struct Chemin {
 
 Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solution *sol2);
 Chemin **initialiserChemins(Noeud **noeuds, unsigned int n);
+void desallouerGraphe(unsigned int *nSol, Noeud ***noeud, unsigned int n);
 void afficherChemin(Chemin *sol, int n);
 void afficherGraphe(Noeud *racine, unsigned int n);
 
