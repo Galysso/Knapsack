@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
 // Ajoute une solution à la liste des solutions efficaces
 void ajouterSolution(Solution ***solutions, Solution *sol, unsigned int *nbSol, unsigned int *nbSolMax) {
 	if (*nbSol == *nbSolMax) {
@@ -75,29 +74,37 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, unsigned int *nbS
 }
 
 // Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
-bool estEfficace(Solution **solutions, unsigned int deb, unsigned int fin, Solution *sol) {
-	while ((deb < fin) && ((solutions[deb]->obj1 < sol->obj1) || (solutions[deb]->obj2 < sol->obj2))) {
-		++deb;
+bool estEfficace(Solution **solutions, unsigned int fin, Solution *sol) {
+	unsigned int i = 0;
+	while ((i < fin) && ((solutions[i]->obj1 < sol->obj1) || (solutions[i]->obj2 < sol->obj2))) {
+		++i;
 	}
-	return (deb == fin);
+	return (i == fin);
 }
 
 // Fuite de mémoire : les chemins ne sont pas désalloués
 Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
-	*nbSol = 0;
-	unsigned int nbSolMax = p->n*p->n;
-	Solution **solSup;
-	Solution **resultat = (Solution **) malloc(nbSolMax*sizeof(Solution *));
-	unsigned int nbSolLBMax = p->n;
-	Solution **solutionsLB = (Solution **) malloc(nbSolLBMax*sizeof(Solution *));
+	unsigned int lambda1, lambda2;		// poids de la somme pondérée
+	unsigned int LB, newLB;				// borne inférieure et plus petite borne inférieure actuelle
+	unsigned int nbSup, nbMaxSup, nbSolMax, nbSolLB, nbSolLBMax;	// remplissages et tailles allouées des tableaux
+	unsigned int *nNoeuds;				// nombre de noeuds pour chaque colonne du graphe
+	Solution **solSup; 		// solutions supportées
+	Solution **solutionsLB; // solutions trouvées dans le triangle pour la borne
+	Solution **resultat;	// solutions efficaces trouvées
 
-	unsigned int deb, nbSup, nbMaxSup, nbSolLB;
+
+	*nbSol = 0;
+	nbSolMax = p->n*p->n;
+	nbSolLBMax = p->n;
+
+	resultat = (Solution **) malloc(nbSolMax*sizeof(Solution *));
+	solutionsLB = (Solution **) malloc(nbSolLBMax*sizeof(Solution *));
 	solSup = glpkSolutionsSupportees(p, &nbSup, &nbMaxSup);
 
 	ajouterSolution(&resultat, solSup[1], nbSol, &nbSolMax);
 	ajouterSolution(&resultat, solSup[nbSup-2], nbSol, &nbSolMax);
 	for (int i = 0; i < nbSup; ++i) {
-		if (estEfficace(resultat, 0, *nbSol, solSup[i])) {
+		if (estEfficace(resultat, *nbSol, solSup[i])) {
 			ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
 		}
 	}
@@ -106,18 +113,16 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
 		nbSolLB = 0;
-		deb = 0;
 
-		unsigned int lambda1 = solSup1->obj2 - solSup2->obj2;
-		unsigned int lambda2 = solSup2->obj1 - solSup1->obj1;
+		lambda1 = solSup1->obj2 - solSup2->obj2;
+		lambda2 = solSup2->obj1 - solSup1->obj1;
 
 		p->lambda1 = lambda1;
 		p->lambda2 = lambda2;
 
-		unsigned int LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
-		unsigned int newLB;
+		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
+		fixer01(p, solSup1->obj1, solSup2->obj2);
 
-		unsigned int *nNoeuds;
 		Tas *tas = TAS_initialiser(p->n*p->n);
 		Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
 		Chemin **chemins = initialiserChemins(graphe[p->n], nNoeuds[p->n]);
@@ -132,7 +137,7 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 			Chemin *chem = TAS_maximum(tas);
 			TAS_retirerMax(tas);
 			Solution *sol = creerSolution(p, chem);
-			if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, deb, *nbSol, sol)) {
+			if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, *nbSol, sol)) {
 				ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
 				ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
 				newLB = meilleureBorne(solutionsLB, nbSolLB, p);
@@ -152,7 +157,7 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProblemeGautier("instance100.DAT");
+	Probleme *p = genererProbleme("A1.DAT");
 	unsigned int nbSol;
 
 	debut = clock();
@@ -180,6 +185,20 @@ int main() {
 	}
 	printf("%d solutions:\n", nbSol);
 	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
+
+
+	/*typedef struct
+	{
+		int nbItem; // nombre d'objets dans le sac
+		itype *p1; // coefficients premier objectif
+		itype *w1; // coefficients première dimension
+		itype *w2; // coefficients seconde dimension
+		int omega1; // capacité première dimension
+		int omega2; // capacité seconde dimension
+		int maxZ1; // pour combo
+	} donnees;*/
+
+	//fixer01(p, 0, 0);
 
 	printf("COCO\n");
 }

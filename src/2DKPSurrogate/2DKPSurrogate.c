@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "combo.h"
+#include "2DKPSurrogate.h"
 
 #include <time.h>
 #include <sys/time.h>
@@ -56,35 +57,6 @@
 /* ======================================================================
  definitions
  ====================================================================== */
-
-typedef struct
-{
-	int nbItem; // nombre d'objets dans le sac
-	itype *p1; // coefficients premier objectif
-	//itype *p2; // coefficients deuxième objectif
-	itype *w1; // coefficients première dimension
-	itype *w2; // coefficients seconde dimension
-	int omega1; // capacité première dimension
-	int omega2; // capacité seconde dimension
-	int maxZ1; // pour combo
-	//int maxZ2; // pour combo
-} donnees;
-
-typedef struct
-{
-	int *tab; // vecteur de valeurs (booléennes) des solutions (à remanier plus tard si nécessaire)
-	int z1; // valeur obj1
-	//int z2; // valeur obj2
-	//long long val; // valeur objectif pondéré // Inutile donc supprimé // Vérifier partout dans le code
-	short int c1; // booléen indiquant si la contrainte 1 est satisfaite (1) ou non (0)
-	short int c2; // booléen indiquant si la contrainte 2 est satisfaite (1) ou non (0)
-	long long mult1; 
-	long long mult2; // multiplicateur utilisé pour trouver la solution
-	long long num; // numérateur du multiplicateur critique (si une seule contrainte est satisfaite)
-	long long den; // dénominateur du multiplicateur critique (si une seule contrainte est satisfaite)
-	//long long lambda1;
-	//long long lambda2; // (lambda1,lambda2) critique (i.e. minimum) pour l'obtention de cette solution à mu constant
-} solution;
 
 // Les chronos pour montrer qu'on explose tous les autres algorithmes de la littérature
 struct timeval start_utime, stop_utime;
@@ -293,14 +265,20 @@ void PrintSolution(solution *s, int size)
 	
 	/* Affichage solution */
 	printf("x = (");
-	for (i = 0; i < size; i++) printf("%d",s->tab[i]);
+	for (i = 0; i < size; i++) {
+		printf("%d",s->tab[i]);
+	}
 	printf(") avec z(x) = %d\n",s->z1);
 	
 	/* Affichage intervalle de stabilité */
 	printf("Intervalle de stabilité :");
-	if (s->c1 == 0) printf("[0,%lld/%lld]\n",s->num,s->den);
-	else if (s->c2 == 0) printf("[%lld/%lld,1]\n",s->num,s->den);
-	else printf("[0,1]\n");
+	if (s->c1 == 0) {
+		printf("[0,%lld/%lld]\n",s->num,s->den);
+	} else if (s->c2 == 0) {
+		printf("[%lld/%lld,1]\n",s->num,s->den);
+	} else {
+		printf("[0,1]\n");
+	}
 }
 
 

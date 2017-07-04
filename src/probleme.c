@@ -1,9 +1,11 @@
 #include "graphe.h"
 #include "probleme.h"
+#include "2DKPSurrogate/2DKPSurrogate.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 Probleme *genererProbleme(char *nomFichier) {
 	Probleme *p = (Probleme *) malloc(sizeof(Probleme));
@@ -35,6 +37,8 @@ Probleme *genererProbleme(char *nomFichier) {
 		poidsCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules1 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
+		p->estFixe0 = (bool *) malloc(nbVariable*sizeof(bool));
+		p->estFixe1 = (bool *) malloc(nbVariable*sizeof(bool));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
@@ -103,6 +107,8 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 		poidsCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules1 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
+		p->estFixe0 = (bool *) malloc(nbVariable*sizeof(bool));
+		p->estFixe1 = (bool *) malloc(nbVariable*sizeof(bool));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
@@ -206,4 +212,131 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	sol->var = var;
 
 	return sol;
+}
+
+void fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
+	solution *s1;
+	solution *s2;
+	int ret;
+	donnees d;
+	unsigned int cpt;
+	unsigned int LB = p->lambda1*(y1+1) + p->lambda2*(y2+1);
+	unsigned int nb0;
+
+	d.nbItem = p->n-1;
+
+	d.p1 = (itype *) malloc ((d.nbItem) * sizeof(itype));
+	d.w1 = (itype *) malloc ((d.nbItem) * sizeof(itype));
+	d.w2 = (itype *) malloc ((d.nbItem) * sizeof(itype));
+
+	d.omega1 = p->capacite1;
+	d.omega2 = p->capacite2;
+
+	for (int i = 0; i < p->n; ++i) {
+		p->estFixe0[i] = false;
+		p->estFixe1[i] = false;
+	}
+
+	nb0 = 0;
+
+	for (int j = 0; j < p->n; ++j) {printf("COCO 1\n");
+		d.maxZ1 = 0;
+		cpt = 0;
+
+		for (int i = 0; i < j; ++i) {
+			if (!p->estFixe0[i]) {
+				d.p1[cpt] = p->coefficients1[i];
+				d.w1[cpt] = p->poids1[i];
+				d.w2[cpt] = p->poids2[i];
+				d.maxZ1 = d.maxZ1 + p->coefficients1[i];
+				++cpt;
+			}
+		}
+		d.omega1 = d.omega1 - p->poids1[j];
+		d.omega2 = d.omega2 - p->poids2[j];
+		for (int i = j+1; i < p->n; ++i) {
+			d.p1[cpt] = p->coefficients1[i];
+			d.w1[cpt] = p->poids1[i];
+			d.w2[cpt] = p->poids2[i];
+			d.maxZ1 = d.maxZ1 + p->coefficients1[i];
+			++cpt;
+		}
+
+		ret = initDichoMu(&s1,&s2,&d);printf("COCO\n");
+		if (ret == 0) {
+			startDichoMu(&s1,&s2,&d);
+		}
+
+		printf("Conclusion : on obtient ");
+		if (s1 == NULL)  {
+			printf("une solution admissible :\n");
+			PrintSolution(s2,d.nbItem-1);
+		} else if (s1->z1 < s2->z1) {
+			printf("une paire de solutions définissant l'optimalité pour le problème dual-surrogate :\n");
+			PrintSolution(s1,d.nbItem-1);
+			PrintSolution(s2,d.nbItem-1);
+		} else {
+			printf("une paire de solutions définissant l'optimalité pour le problème dual-surrogate :\n");
+			PrintSolution(s2,d.nbItem-1);
+			PrintSolution(s1,d.nbItem-1);
+		}
+		printf("\n");
+
+		if ((s1 != NULL) && (s1->z1 > s2->z1)) {
+			s2 = s1;
+		}
+		if (s2->z1 + p->coefficients1[j] <= y1) {
+			p->estFixe0[j] = true;
+			d.nbItem -= 1;
+			++nb0;
+		} else {
+			d.maxZ1 = 0;
+			cpt = 0;
+
+			for (int i = 0; i < j; ++i) {
+				if (!p->estFixe0[i]) {
+					d.p1[cpt] = p->coefficients2[i];
+					d.maxZ1 = d.maxZ1 + p->coefficients2[i];
+					++cpt;
+				}
+			}
+			for (int i = j+1; i < p->n; ++i) {
+				d.p1[cpt] = p->coefficients2[i];
+				d.maxZ1 = d.maxZ1 + p->coefficients2[i];
+				++cpt;
+			}
+
+			ret = initDichoMu(&s1,&s2,&d);
+			if (ret == 0) {
+				startDichoMu(&s1,&s2,&d);
+			}
+			if ((s1 != NULL) && (s1->z1 > s2->z1)) {
+				s2 = s1;
+			}
+			if (s2->z1 + p->coefficients2[j] <= y2) {
+				p->estFixe0[j] = true;
+				d.nbItem -= 1;
+				++nb0;
+			}
+		}
+		
+		d.omega1 += p->poids1[j];
+		d.omega2 += p->poids2[j];
+
+		// Libération mémoire
+		
+		free(s2->tab);
+		free(s2);
+		if (s1 != NULL) {
+			free(s1->tab);
+			free(s1);
+		}
+	}
+
+	free(d.p1);
+	free(d.w1);
+	free(d.w2);
+	printf("nb0=%d\n", nb0);
+	
+	// J'adore qu'un plan se déroule sans accroc!
 }

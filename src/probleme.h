@@ -24,6 +24,9 @@ struct Probleme {
 	unsigned int *coefCumules2;
 	unsigned int lambda1;
 	unsigned int lambda2;
+
+	bool *estFixe0;
+	bool *estFixe1;
 };
 
 struct Solution {
@@ -37,5 +40,6 @@ struct Solution {
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
+void fixer01(Probleme *p, unsigned int y1, unsigned int y2);
 
 #endif

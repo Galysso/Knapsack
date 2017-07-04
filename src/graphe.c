@@ -44,7 +44,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 			noeudPrec = noeuds[i-1][j];
 			unsigned int k = 0;
 			// Si l'objet entre dans le sac
-			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
+			if ((!p->estFixe0[i-1]) && (noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
 				unsigned int futurP1 = noeudPrec->poids1 + p->poids1[i-1];
 				unsigned int futurP2 = noeudPrec->poids2 + p->poids2[i-1];
 				// On regarde si le noeud à ajouter existe déjà
@@ -125,6 +125,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
+		printf("nb=%d\n",nb);
 	}
 
 	return noeuds;
