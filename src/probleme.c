@@ -13,6 +13,8 @@ Probleme *genererProbleme(char *nomFichier) {
 	FILE *fichier = fopen(nomFichier, "r");
 
 	if (fichier) {
+		p->nomFichier = nomFichier;
+
 		unsigned int nbVariable;
 		unsigned int capacite1;
 		unsigned int capacite2;
@@ -24,6 +26,7 @@ Probleme *genererProbleme(char *nomFichier) {
 		unsigned int *poidsCumules2;
 		unsigned int *coefCumules1;
 		unsigned int *coefCumules2;
+		unsigned int *indVar;
 
 		assert(fscanf(fichier, "%d", &nbVariable));
 		assert(fscanf(fichier, "%d", &capacite1));
@@ -37,8 +40,7 @@ Probleme *genererProbleme(char *nomFichier) {
 		poidsCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules1 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
-		p->estFixe0 = (bool *) malloc(nbVariable*sizeof(bool));
-		p->estFixe1 = (bool *) malloc(nbVariable*sizeof(bool));
+		indVar = (unsigned int *) malloc((nbVariable)*sizeof(unsigned int));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
@@ -56,6 +58,7 @@ Probleme *genererProbleme(char *nomFichier) {
 			poidsCumules2[i] = poidsCumules2[i+1] + poids2[i];
 			coefCumules1[i] = coefCumules1[i+1] + coef1[i];
 			coefCumules2[i] = coefCumules2[i+1] + coef2[i];
+			indVar[i] = i;
 		}
 		
 
@@ -70,6 +73,7 @@ Probleme *genererProbleme(char *nomFichier) {
 		p->poidsCumules2 = poidsCumules2;
 		p->coefCumules1 = coefCumules1;
 		p->coefCumules2 = coefCumules2;
+		p->indVar = indVar;
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -83,6 +87,8 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 	FILE *fichier = fopen(nomFichier, "r");
 
 	if (fichier) {
+		p->nomFichier = nomFichier;
+
 		unsigned int nbVariable;
 		unsigned int capacite1;
 		unsigned int capacite2;
@@ -94,6 +100,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 		unsigned int *poidsCumules2;
 		unsigned int *coefCumules1;
 		unsigned int *coefCumules2;
+		unsigned int *indVar;
 
 		assert(fscanf(fichier, "%d", &nbVariable));
 		assert(fscanf(fichier, "%d", &capacite1));
@@ -107,8 +114,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 		poidsCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules1 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
 		coefCumules2 = (unsigned int *) malloc((1+nbVariable)*sizeof(unsigned int));
-		p->estFixe0 = (bool *) malloc(nbVariable*sizeof(bool));
-		p->estFixe1 = (bool *) malloc(nbVariable*sizeof(bool));
+		indVar = (unsigned int *) malloc((nbVariable)*sizeof(unsigned int));
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &coef1[i]));
@@ -132,6 +138,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 			poidsCumules2[i] = poidsCumules2[i+1] + poids2[i];
 			coefCumules1[i] = coefCumules1[i+1] + coef1[i];
 			coefCumules2[i] = coefCumules2[i+1] + coef2[i];
+			indVar[i] = i;
 		}
 		
 
@@ -146,6 +153,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 		p->poidsCumules2 = poidsCumules2;
 		p->coefCumules1 = coefCumules1;
 		p->coefCumules2 = coefCumules2;
+		p->indVar = indVar;
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -214,60 +222,58 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-void fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
+Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 	solution *s1;
 	solution *s2;
+	Probleme *sousProb;
 	int ret;
 	donnees d;
 	unsigned int cpt;
 	unsigned int LB = p->lambda1*(y1+1) + p->lambda2*(y2+1);
 	unsigned int nb0;
 
-	d.nbItem = p->n-1;
-
-	d.p1 = (itype *) malloc ((d.nbItem) * sizeof(itype));
-	d.w1 = (itype *) malloc ((d.nbItem) * sizeof(itype));
-	d.w2 = (itype *) malloc ((d.nbItem) * sizeof(itype));
-
-	d.omega1 = p->capacite1;
-	d.omega2 = p->capacite2;
-
-	for (int i = 0; i < p->n; ++i) {
-		p->estFixe0[i] = false;
-		p->estFixe1[i] = false;
-	}
+	d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
+	d.w1 = (itype *) malloc ((p->n) * sizeof(itype));
+	d.w2 = (itype *) malloc ((p->n) * sizeof(itype));
+	d.maxZ1 = 0;
 
 	nb0 = 0;
 
-	for (int j = 0; j < p->n; ++j) {printf("COCO 1\n");
+	sousProb = genererProbleme(p->nomFichier);
+
+	unsigned int i = 0;
+	while (i < d.nbItem) {
+		d.omega1 = sousProb->capacite1 - sousProb->poids1[i];
+		d.omega2 = sousProb->capacite2 - sousProb->poids2[i];
+		d.nbItem = sousProb->n-1;
 		d.maxZ1 = 0;
-		cpt = 0;
-
-		for (int i = 0; i < j; ++i) {
-			if (!p->estFixe0[i]) {
-				d.p1[cpt] = p->coefficients1[i];
-				d.w1[cpt] = p->poids1[i];
-				d.w2[cpt] = p->poids2[i];
-				d.maxZ1 = d.maxZ1 + p->coefficients1[i];
-				++cpt;
-			}
+		for (int j = 0; j < j; ++j) {
+			d.p1[j] = sousProb->coefficients1[j];
+			d.w1[j] = sousProb->poids1[j];
+			d.w2[j] = sousProb->poids2[j];
 		}
-		d.omega1 = d.omega1 - p->poids1[j];
-		d.omega2 = d.omega2 - p->poids2[j];
-		for (int i = j+1; i < p->n; ++i) {
-			d.p1[cpt] = p->coefficients1[i];
-			d.w1[cpt] = p->poids1[i];
-			d.w2[cpt] = p->poids2[i];
-			d.maxZ1 = d.maxZ1 + p->coefficients1[i];
-			++cpt;
+		for (int j = i+1; j < sousProb->n; ++j) {
+			d.p1[j-1] = sousProb->coefficients1[j];
+			d.w1[j-1] = sousProb->poids1[j];
+			d.w2[j-1] = sousProb->poids2[j];
 		}
 
-		ret = initDichoMu(&s1,&s2,&d);printf("COCO\n");
+		printf("fixé à 1 : %d, %d, %d\n", sousProb->coefficients1[i], sousProb->poids1[i], sousProb->poids2[i]);
+		printf("capacité1=%d\tcapacité2=%d\n", sousProb->capacite1, sousProb->capacite2);
+		printf("omega1=%d\tomega2=%d\n", d.omega1, d.omega2);
+		for(int j = 0; j < d.nbItem; ++j) {
+			printf("%d\t%d\t%d\t%d\n", j, d.p1[j], d.w1[j], d.w2[j]);
+		}
+		printf("\n");
+		//getchar();
+
+		
+		ret = initDichoMu(&s1,&s2,&d);
 		if (ret == 0) {
 			startDichoMu(&s1,&s2,&d);
 		}
 
-		printf("Conclusion : on obtient ");
+		/*printf("Conclusion : on obtient ");
 		if (s1 == NULL)  {
 			printf("une solution admissible :\n");
 			PrintSolution(s2,d.nbItem-1);
@@ -280,48 +286,26 @@ void fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 			PrintSolution(s2,d.nbItem-1);
 			PrintSolution(s1,d.nbItem-1);
 		}
-		printf("\n");
+		printf("\n");*/
 
-		if ((s1 != NULL) && (s1->z1 > s2->z1)) {
+		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			s2 = s1;
 		}
-		if (s2->z1 + p->coefficients1[j] <= y1) {
-			p->estFixe0[j] = true;
-			d.nbItem -= 1;
-			++nb0;
+		// Si la borne supérieur de la solution optimale n'atteint pas le triangle
+		if (s2->z1 + sousProb->coefficients1[i] <= y1) {
+			// On fixe la variable à 0, donc on la retire du problème
+			sousProb->n -= 1;
+			for (int j = i; j < sousProb->n; ++j) {
+				sousProb->coefficients1[j] = sousProb->coefficients1[j+1];
+				sousProb->coefficients2[j] = sousProb->coefficients2[j+1];
+				sousProb->poids1[j] = sousProb->poids1[j+1];
+				sousProb->poids2[j] = sousProb->poids2[j+1];
+				sousProb->indVar[j] = sousProb->indVar[j+1];
+			}
 		} else {
-			d.maxZ1 = 0;
-			cpt = 0;
-
-			for (int i = 0; i < j; ++i) {
-				if (!p->estFixe0[i]) {
-					d.p1[cpt] = p->coefficients2[i];
-					d.maxZ1 = d.maxZ1 + p->coefficients2[i];
-					++cpt;
-				}
-			}
-			for (int i = j+1; i < p->n; ++i) {
-				d.p1[cpt] = p->coefficients2[i];
-				d.maxZ1 = d.maxZ1 + p->coefficients2[i];
-				++cpt;
-			}
-
-			ret = initDichoMu(&s1,&s2,&d);
-			if (ret == 0) {
-				startDichoMu(&s1,&s2,&d);
-			}
-			if ((s1 != NULL) && (s1->z1 > s2->z1)) {
-				s2 = s1;
-			}
-			if (s2->z1 + p->coefficients2[j] <= y2) {
-				p->estFixe0[j] = true;
-				d.nbItem -= 1;
-				++nb0;
-			}
+			// Sinon on 
+			++i;
 		}
-		
-		d.omega1 += p->poids1[j];
-		d.omega2 += p->poids2[j];
 
 		// Libération mémoire
 		

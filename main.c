@@ -121,7 +121,7 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 		p->lambda2 = lambda2;
 
 		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
-		fixer01(p, solSup1->obj1, solSup2->obj2);
+		Probleme *sousProb = fixer01(p, solSup1->obj1, solSup2->obj2);
 
 		Tas *tas = TAS_initialiser(p->n*p->n);
 		Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);

@@ -11,6 +11,7 @@ typedef struct Probleme Probleme;
 typedef struct Solution Solution;
 
 struct Probleme {
+	char *nomFichier;
 	unsigned int n;					// nombre d'objets
 	unsigned int capacite1;			// capacité du sac à dos
 	unsigned int capacite2;
@@ -22,11 +23,9 @@ struct Probleme {
 	unsigned int *poidsCumules2;
 	unsigned int *coefCumules1;
 	unsigned int *coefCumules2;
+	unsigned int *indVar;
 	unsigned int lambda1;
 	unsigned int lambda2;
-
-	bool *estFixe0;
-	bool *estFixe1;
 };
 
 struct Solution {
@@ -40,6 +39,6 @@ struct Solution {
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-void fixer01(Probleme *p, unsigned int y1, unsigned int y2);
+Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2);
 
 #endif
