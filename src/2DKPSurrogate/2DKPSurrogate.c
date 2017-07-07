@@ -147,6 +147,7 @@ void singleOpt(long long mult1, long long mult2, donnees *d, solution *s)
 	item* prob;
 	long long maxZ;
 	int index;
+	long long sumW = 0;
 	
 	prob = (item *) malloc ((d->nbItem) * sizeof(item));
 	
@@ -156,19 +157,31 @@ void singleOpt(long long mult1, long long mult2, donnees *d, solution *s)
 		//prob[i].p = lambda1 * d->p1[i] + lambda2 * d->p2[i];
 		prob[i].p = d->p1[i];
 		prob[i].i = i;
+		sumW += prob[i].w;
 	}
 	
 	capa = mult1 * d->omega1 + mult2 * d->omega2;
 	//maxZ = lambda1 * d->maxZ1 + lambda2 * d->maxZ2;
 	maxZ = d->maxZ1;
 	
-	s->z1 = (int) combo(&prob[0], &prob[d->nbItem - 1], capa, 0, maxZ, 1, 1);
-	
-	
-	for (i = 0; i < d->nbItem; i++)
-	{
-		index = prob[i].i;
-		s->tab[index] = prob[i].x;
+	/*for (int j = 0; j < d->nbItem; ++j) {
+		printf("%lld\t%lld\n", prob[j].p, prob[j].w);
+	}
+	printf("capa=%lld\n\n", capa);*/
+
+	if (sumW > capa) {
+		s->z1 = (int) combo(&prob[0], &prob[d->nbItem - 1], capa, 0, maxZ, 1, 1);
+		for (i = 0; i < d->nbItem; i++)
+		{
+			index = prob[i].i;
+			s->tab[index] = prob[i].x;
+		}
+	} else {
+		s->z1 = 0;
+		for (i = 0; i < d->nbItem; ++i) {
+			s->z1 += prob[i].p;
+			s->tab[i] = 1;
+		}
 	}
 	
 	free(prob);

@@ -125,7 +125,7 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
-		//printf("nb=%d\n",nb);
+		printf("nb=%d\n",nb);
 	}
 
 	return noeuds;

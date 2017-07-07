@@ -246,8 +246,8 @@ Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 		d.omega1 = sousProb->capacite1 - sousProb->poids1[i];
 		d.omega2 = sousProb->capacite2 - sousProb->poids2[i];
 		d.nbItem = sousProb->n-1;
-		d.maxZ1 = 0;
-		for (int j = 0; j < j; ++j) {
+		d.maxZ1 = 1000000;
+		for (int j = 0; j < i; ++j) {
 			d.p1[j] = sousProb->coefficients1[j];
 			d.w1[j] = sousProb->poids1[j];
 			d.w2[j] = sousProb->poids2[j];
@@ -267,13 +267,15 @@ Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 		printf("\n");
 		//getchar();
 
-		
+		printf("COCO 1\n");
 		ret = initDichoMu(&s1,&s2,&d);
 		if (ret == 0) {
 			startDichoMu(&s1,&s2,&d);
 		}
+		printf("COCO 2\n");
 
-		/*printf("Conclusion : on obtient ");
+		printf("Y1 = %d\n", y1);
+		printf("Conclusion : on obtient ");
 		if (s1 == NULL)  {
 			printf("une solution admissible :\n");
 			PrintSolution(s2,d.nbItem-1);
@@ -286,7 +288,9 @@ Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 			PrintSolution(s2,d.nbItem-1);
 			PrintSolution(s1,d.nbItem-1);
 		}
-		printf("\n");*/
+		printf("\n");
+
+		getchar();
 
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			s2 = s1;
@@ -302,6 +306,7 @@ Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 				sousProb->poids2[j] = sousProb->poids2[j+1];
 				sousProb->indVar[j] = sousProb->indVar[j+1];
 			}
+			++nb0;
 		} else {
 			// Sinon on 
 			++i;
@@ -312,8 +317,8 @@ Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2) {
 		free(s2->tab);
 		free(s2);
 		if (s1 != NULL) {
-			free(s1->tab);
-			free(s1);
+			/*free(s1->tab);
+			free(s1);*/
 		}
 	}
 
