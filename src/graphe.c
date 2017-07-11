@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solution *sol2) {
+Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
 
-	unsigned int lambda1 = p->lambda1;
-	unsigned int lambda2 = p->lambda2;
-	unsigned int LB = lambda1*(sol1->obj1+1) + lambda2*(sol2->obj2+1);
+	int lambda1 = p->lambda1;
+	int lambda2 = p->lambda2;
+	int LB = lambda1*(sol1->obj1+1) + lambda2*(sol2->obj2+1);
 
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
@@ -24,14 +24,14 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 	nouveau->existeAlt = false;
 	nouveau->ajoutForce = false;
 
-	unsigned int nbPrec;	// le nombre de noeuds de la dernière colonne construite
-	unsigned int nb = 1;	// le nombre de noeuds de la colonne en construction
+	int nbPrec;	// le nombre de noeuds de la dernière colonne construite
+	int nb = 1;	// le nombre de noeuds de la colonne en construction
 
 	noeuds = (Noeud ***) malloc((p->n+1)*sizeof(Noeud **));
 	noeuds[0] = (Noeud **) malloc(sizeof(Noeud *));
 	noeuds[0][0] = nouveau;
 
-	*nSol = malloc((p->n+1)*sizeof(unsigned int));
+	*nSol = malloc((p->n+1)*sizeof(int));
 	(*nSol)[0] = 1;
 
 	// Pour chaque objet du sac
@@ -42,11 +42,11 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 		noeuds[i] = (Noeud **) malloc(2*nbPrec*sizeof(Noeud *));
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
-			unsigned int k = 0;
+			int k = 0;
 			// Si l'objet entre dans le sac
 			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
-				unsigned int futurP1 = noeudPrec->poids1 + p->poids1[i-1];
-				unsigned int futurP2 = noeudPrec->poids2 + p->poids2[i-1];
+				int futurP1 = noeudPrec->poids1 + p->poids1[i-1];
+				int futurP2 = noeudPrec->poids2 + p->poids2[i-1];
 				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->poids1 != futurP1) || (noeuds[i][k]->poids2 != futurP2))) {
 					++k;
@@ -125,14 +125,14 @@ Noeud ***genererGraphe(Probleme *p, unsigned int **nSol, Solution *sol1, Solutio
 		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
-		printf("nb=%d\n",nb);
+		//printf("nb=%d\n",nb);
 	}
 
 	return noeuds;
 }
 
 // Créé les chemins initiaux non modifiés
-Chemin **initialiserChemins(Noeud **noeuds, unsigned int n) {
+Chemin **initialiserChemins(Noeud **noeuds, int n) {
 	Chemin **chemins = (Chemin **) malloc(n*sizeof(Chemin *));
 	for (int i = 0; i < n; ++i) {
 		Chemin *chem = (Chemin *) malloc(sizeof(Chemin));
@@ -149,7 +149,7 @@ Chemin **initialiserChemins(Noeud **noeuds, unsigned int n) {
 }
 
 // Libère la mémoire allouée aux noeuds (après traitement d'un triangle)
-void desallouerGraphe(unsigned int *nSol, Noeud ***noeuds, unsigned int n) {
+void desallouerGraphe(int *nSol, Noeud ***noeuds, int n) {
 	for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < nSol[i]; ++j) {
 			free(noeuds[i][j]);
@@ -159,7 +159,7 @@ void desallouerGraphe(unsigned int *nSol, Noeud ***noeuds, unsigned int n) {
 	free(noeuds);
 }
 
-void afficherGraphe(Noeud *node, unsigned int n) {
+void afficherGraphe(Noeud *node, int n) {
 	printf("(%d,%d,%d) :\n", n, node->poids1, node->poids2);
 	printf("val = %d\n", node->val);
 	if (node->precBest != NULL) {
@@ -176,7 +176,7 @@ void afficherChemin(Chemin *chem, int n) {
 
 	if (chem->deviation) {
 		int nDev = chem->nDeviation;
-		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
+		int *deviations = (int *) malloc(nDev*sizeof(int));
 		for (int i = 0; i < nDev; ++i) {
 			deviations[i] = chem->deviation;
 			chem = (Chemin*) chem->chemin;

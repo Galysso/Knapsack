@@ -8,7 +8,7 @@
 #include <time.h>
 
 // Ajoute une solution à la liste des solutions efficaces
-void ajouterSolution(Solution ***solutions, Solution *sol, unsigned int *nbSol, unsigned int *nbSolMax) {
+void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
 	if (*nbSol == *nbSolMax) {
 		*nbSolMax = (*nbSolMax)*(*nbSolMax);
 		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
@@ -18,10 +18,10 @@ void ajouterSolution(Solution ***solutions, Solution *sol, unsigned int *nbSol, 
 }
 
 // Calcule la borne minimale actuelle
-unsigned int meilleureBorne(Solution **solutionsLB, unsigned int nbSol, Probleme *p) {
-	unsigned int lambda1 = p->lambda1;
-	unsigned int lambda2 = p->lambda2;
-	unsigned int LB, LBprim;
+int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p) {
+	int lambda1 = p->lambda1;
+	int lambda2 = p->lambda2;
+	int LB, LBprim;
 	Solution *solG, *sol;
 
 	LB = lambda1*(solutionsLB[0]->obj1 + 1) + lambda2*(solutionsLB[1]->obj2 + 1);
@@ -40,8 +40,8 @@ unsigned int meilleureBorne(Solution **solutionsLB, unsigned int nbSol, Probleme
 
 // Ajoute la solution à la liste des points définissant les points de Nadir locaux
 // Conserve l'ordre lexicographique des solutions
-void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, unsigned int *nbSol, unsigned int *nbSolMax) {
-	unsigned int min, ind, max;
+void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *nbSolMax) {
+	int min, ind, max;
 	Solution *solLB;
 	if (*nbSol == *nbSolMax) {
 		*nbSolMax = (*nbSolMax)*(*nbSolMax);
@@ -74,8 +74,8 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, unsigned int *nbS
 }
 
 // Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
-bool estEfficace(Solution **solutions, unsigned int fin, Solution *sol) {
-	unsigned int i = 0;
+bool estEfficace(Solution **solutions, int fin, Solution *sol) {
+	int i = 0;
 	while ((i < fin) && ((solutions[i]->obj1 < sol->obj1) || (solutions[i]->obj2 < sol->obj2))) {
 		++i;
 	}
@@ -83,11 +83,11 @@ bool estEfficace(Solution **solutions, unsigned int fin, Solution *sol) {
 }
 
 // Fuite de mémoire : les chemins ne sont pas désalloués
-Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
-	unsigned int lambda1, lambda2;		// poids de la somme pondérée
-	unsigned int LB, newLB;				// borne inférieure et plus petite borne inférieure actuelle
-	unsigned int nbSup, nbMaxSup, nbSolMax, nbSolLB, nbSolLBMax;	// remplissages et tailles allouées des tableaux
-	unsigned int *nNoeuds;				// nombre de noeuds pour chaque colonne du graphe
+Solution **trouverSolutions(Probleme *p, int *nbSol) {
+	int lambda1, lambda2;		// poids de la somme pondérée
+	int LB, newLB;				// borne inférieure et plus petite borne inférieure actuelle
+	int nbSup, nbMaxSup, nbSolMax, nbSolLB, nbSolLBMax;	// remplissages et tailles allouées des tableaux
+	int *nNoeuds;				// nombre de noeuds pour chaque colonne du graphe
 	Solution **solSup; 		// solutions supportées
 	Solution **solutionsLB; // solutions trouvées dans le triangle pour la borne
 	Solution **resultat;	// solutions efficaces trouvées
@@ -157,8 +157,8 @@ Solution **trouverSolutions(Probleme *p, unsigned int *nbSol) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProbleme("A1.DAT");
-	unsigned int nbSol;
+	Probleme *p = genererProblemeGautier("instance100.DAT");
+	int nbSol;
 
 	debut = clock();
 	Solution **nonDominated = trouverSolutions(p, &nbSol);

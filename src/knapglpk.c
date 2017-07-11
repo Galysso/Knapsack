@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned int *nMax) {
+Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	*nMax = prob->n*prob->n;
 	Solution **sols = (Solution **) malloc(*nMax*sizeof(Solution *));
 	Solution *sol;
@@ -28,7 +28,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 	glp_set_row_bnds(glpProb, 2, GLP_UP, 0.0, prob->capacite2);
 	glp_add_cols(glpProb, n);
 
-	unsigned int cpt = 1;
+	int cpt = 1;
 	for (int i = 0; i < n; ++i) {
 		glp_set_col_kind(glpProb, i+1, GLP_BV);
 		glp_set_obj_coef(glpProb, i+1, prob->coefficients1[i]);
@@ -58,7 +58,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
-	sol->obj1 = (unsigned int) glp_mip_obj_val(glpProb);
+	sol->obj1 = (int) glp_mip_obj_val(glpProb);
 	sol->obj2 = 0;
 	sol->poids1 = 0;
 	sol->poids2 = 0;
@@ -90,7 +90,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
 	sol->obj1 = 0;
-	sol->obj2 = (unsigned int) glp_mip_obj_val(glpProb);
+	sol->obj2 = (int) glp_mip_obj_val(glpProb);
 	sol->poids1 = 0;
 	sol->poids2 = 0;
 	for (int i = 0; i < n; ++i) {
@@ -127,8 +127,8 @@ Solution **glpkSolutionsSupportees(Probleme *prob, unsigned int *nSol, unsigned 
 }
 
 
-void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, unsigned int *nMax, unsigned int *nSol, Solution *sol1, Solution *sol2) {
-	unsigned int lambda1, lambda2;
+void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, int *nMax, int *nSol, Solution *sol1, Solution *sol2) {
+	int lambda1, lambda2;
 	lambda1 = sol1->obj2 - sol2->obj2;
 	lambda2 = sol2->obj1 - sol1->obj1;
 

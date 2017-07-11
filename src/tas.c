@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 
-Tas *TAS_initialiser(unsigned int taille) {
+Tas *TAS_initialiser(int taille) {
 	Tas *tas = malloc(sizeof(Tas));
 	tas->tab = malloc(taille*sizeof(Chemin *));
 	tas->taille = taille;
@@ -18,8 +18,8 @@ void TAS_ajouter(Tas *tas, Chemin *val) {
 		tas->taille = 2*tas->taille;
 		tas->tab = realloc(tas->tab, tas->taille*sizeof(Chemin *));
 	}
-	unsigned int indP;	// l'indice du père
-	unsigned int indC;	// l'indice de parcours
+	int indP;	// l'indice du père
+	int indC;	// l'indice de parcours
 	Chemin *tmp;			// valeur temporaire pour échange
 	Chemin **tab = tas->tab;
 	tab[tas->n] = val;	// on insère la valeur à la fin du tableau
@@ -39,8 +39,8 @@ void TAS_ajouter(Tas *tas, Chemin *val) {
 
 void TAS_retirerMax(Tas *tas) {
 	int ind = 0;
-	unsigned int indFG;		// l'indice du fils gauche
-	unsigned int indFD;		// l'indice du fils droit
+	int indFG;		// l'indice du fils gauche
+	int indFD;		// l'indice du fils droit
 	Chemin *tmp;				// valeur temporaire pour échange
 	bool fini = false;
 	tas->n = tas->n - 1;	// il y a un élément de moins dans le tas

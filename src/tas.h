@@ -7,11 +7,11 @@ typedef struct Tas Tas;
 
 struct Tas {
 	Chemin **tab;
-	unsigned int n;
-	unsigned int taille;
+	int n;
+	int taille;
 };
 
-Tas *TAS_initialiser(unsigned int taille);
+Tas *TAS_initialiser(int taille);
 void TAS_ajouter(Tas *tas, Chemin *val);
 void TAS_retirerMax(Tas *tas);
 Chemin *TAS_maximum(Tas *tas);

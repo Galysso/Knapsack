@@ -12,33 +12,33 @@ typedef struct Solution Solution;
 
 struct Probleme {
 	char *nomFichier;
-	unsigned int n;					// nombre d'objets
-	unsigned int capacite1;			// capacité du sac à dos
-	unsigned int capacite2;
-	unsigned int *coefficients1;	// coefficients des variables dans la fonction objectif
-	unsigned int *coefficients2;
-	unsigned int *poids1;			// poids des variables dans la fonction objectif
-	unsigned int *poids2;
-	unsigned int *poidsCumules1;
-	unsigned int *poidsCumules2;
-	unsigned int *coefCumules1;
-	unsigned int *coefCumules2;
-	unsigned int *indVar;
-	unsigned int lambda1;
-	unsigned int lambda2;
+	int n;					// nombre d'objets
+	int capacite1;			// capacité du sac à dos
+	int capacite2;
+	int *coefficients1;	// coefficients des variables dans la fonction objectif
+	int *coefficients2;
+	int *poids1;			// poids des variables dans la fonction objectif
+	int *poids2;
+	int *poidsCumules1;
+	int *poidsCumules2;
+	int *coefCumules1;
+	int *coefCumules2;
+	int *indVar;
+	int lambda1;
+	int lambda2;
 };
 
 struct Solution {
-	unsigned int obj1;
-	unsigned int obj2;
-	unsigned int poids1;
-	unsigned int poids2;
+	int obj1;
+	int obj2;
+	int poids1;
+	int poids2;
 	bool *var;						// vrai si l'objet i est dans la solution, faux sinon
 };
 
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-Probleme *fixer01(Probleme *p, unsigned int y1, unsigned int y2);
+Probleme *fixer01(Probleme *p, int y1, int y2);
 
 #endif

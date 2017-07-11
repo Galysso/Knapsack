@@ -11,9 +11,9 @@
 // Génère les fils d'un chemin pour le ranking
 void genererSolutions(Chemin *chem, Tas *tas, Probleme *prob) {
 	// On cherche le premier noeud possédant un chemin alternatif
-	unsigned int solVal = chem->val;
-	unsigned int solObj1 = chem->obj1;
-	unsigned int solObj2 = chem->obj2;
+	int solVal = chem->val;
+	int solObj1 = chem->obj1;
+	int solObj2 = chem->obj2;
 	int n = prob->n;
 	Noeud *noeud;
 	Chemin *nouveauChem, *chemCourant;
@@ -23,7 +23,7 @@ void genererSolutions(Chemin *chem, Tas *tas, Probleme *prob) {
 	// Alors on enregistre dans un vecteur les déviations précédentes
 	if (chemCourant->nDeviation > 0) {
 		int nDev = chemCourant->nDeviation;
-		unsigned int *deviations = (unsigned int *) malloc(nDev*sizeof(unsigned int));
+		int *deviations = (int *) malloc(nDev*sizeof(int));
 		for (int i = 0; i < nDev; ++i) {
 			deviations[i] = chemCourant->deviation;
 			chemCourant = (Chemin*) chemCourant->chemin;
