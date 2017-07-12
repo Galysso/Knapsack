@@ -33,6 +33,10 @@ struct Chemin {
 	bool existeAlt;				// vrai si la solution admet au moins une réoptimisation
 };
 
+Noeud *creerNoeudAjout(Probleme *p, Noeud *noeudPrec, int i);
+Noeud *creerNoeudNonAjout(Noeud *noeudPrec);
+void modifierBestPrecAjout(Noeud *noeud, Probleme *p, Noeud *noeudPrec, int i);
+void modifierBestPrecNonAjout(Noeud *noeud, Noeud *noeudPrec);
 Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2);
 Chemin **initialiserChemins(Noeud **noeuds, int n);
 void desallouerGraphe(int *nSol, Noeud ***noeud, int n);

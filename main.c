@@ -123,11 +123,11 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
 	Probleme *sousProb = fixer01(p, solSup1->obj1, solSup2->obj2);
 
-		Tas *tas = TAS_initialiser(p->n*p->n);
-		Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
-		Chemin **chemins = initialiserChemins(graphe[p->n], nNoeuds[p->n]);
+		Tas *tas = TAS_initialiser(sousProb->n*sousProb->n);
+		Noeud ***graphe = genererGraphe(sousProb, &nNoeuds, solSup1, solSup2);
+		Chemin **chemins = initialiserChemins(graphe[sousProb->n], nNoeuds[sousProb->n]);
 
-		for (int j = 0; j < nNoeuds[p->n]; ++j) {
+		for (int j = 0; j < nNoeuds[sousProb->n]; ++j) {
 			TAS_ajouter(tas, chemins[j]);
 		}
 
@@ -136,19 +136,19 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
 			Chemin *chem = TAS_maximum(tas);
 			TAS_retirerMax(tas);
-			Solution *sol = creerSolution(p, chem);
+			Solution *sol = creerSolution(sousProb, chem);
 			if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, *nbSol, sol)) {
 				ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
 				ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
-				newLB = meilleureBorne(solutionsLB, nbSolLB, p);
+				newLB = meilleureBorne(solutionsLB, nbSolLB, sousProb);
 				if (newLB > LB) {
 					LB = newLB;
 				}
 			}
-			genererSolutions(chem, tas, p);
+			genererSolutions(chem, tas, sousProb);
 		}
 
-		desallouerGraphe(nNoeuds, graphe, p->n+1);
+		desallouerGraphe(nNoeuds, graphe, sousProb->n+1);
 	}
 
 	return resultat;

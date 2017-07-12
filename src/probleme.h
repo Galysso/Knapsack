@@ -15,7 +15,7 @@ struct Probleme {
 	int n;					// nombre d'objets
 	int capacite1;			// capacité du sac à dos
 	int capacite2;
-	int *coefficients1;	// coefficients des variables dans la fonction objectif
+	int *coefficients1;		// coefficients des variables dans la fonction objectif
 	int *coefficients2;
 	int *poids1;			// poids des variables dans la fonction objectif
 	int *poids2;

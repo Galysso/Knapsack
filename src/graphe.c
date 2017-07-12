@@ -5,6 +5,41 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+Noeud *creerNoeudAjout(Probleme *p, Noeud *noeudPrec, int i) {
+	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
+	nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i];
+	nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i];
+	nouveau->val = + p->lambda1*nouveau->obj1 + p->lambda2*nouveau->obj2;
+	nouveau->poids1 = noeudPrec->poids1 + p->poids1[i];
+	nouveau->poids2 = noeudPrec->poids2 + p->poids2[i];
+	nouveau->precBest = noeudPrec;
+	nouveau->precAlt = NULL;
+	nouveau->existeAlt = noeudPrec->existeAlt;
+	nouveau->ajoutForce = noeudPrec->ajoutForce;
+	return nouveau;
+}
+Noeud *creerNoeudNonAjout(Noeud *noeudPrec) {
+	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
+	nouveau->val = noeudPrec->val;
+	nouveau->poids1 = noeudPrec->poids1;
+	nouveau->poids2 = noeudPrec->poids2;
+	nouveau->obj1 = noeudPrec->obj1;
+	nouveau->obj2 = noeudPrec->obj2;
+	nouveau->precBest = noeudPrec;
+	nouveau->precAlt = NULL;
+	nouveau->existeAlt = noeudPrec->existeAlt;
+	nouveau->ajoutForce = noeudPrec->ajoutForce;
+	return nouveau;
+}
+
+void modifierBestPrecAjout(Noeud *noeud, Probleme *p, Noeud *noeudPrec, int i) {
+
+}
+
+void modifierBestPrecNonAjout(Noeud *noeud, Noeud *noeudPrec) {
+	
+}
+
 Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
@@ -53,17 +88,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 				}
 				// S'il n'existe pas on le crée
 				if (k == nb) {
-					nouveau = (Noeud *) malloc(sizeof(Noeud));
-					nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
-					nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
-					nouveau->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
-					nouveau->poids1 = futurP1;
-					nouveau->poids2 = futurP2;
-					nouveau->precBest = noeudPrec;
-					nouveau->precAlt = NULL;
-					nouveau->existeAlt = noeudPrec->existeAlt;
-					nouveau->ajoutForce = noeudPrec->ajoutForce;
-					noeuds[i][nb] = nouveau;
+					noeuds[i][nb] = creerNoeudAjout(p, noeudPrec, i-1);
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
@@ -84,7 +109,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			}
 			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
 			// Alors on crée le noeud
-			if ((noeudPrec->val + lambda1*(p->coefCumules1[i]+1) + lambda2*p->coefCumules2[i]+1) >= LB) {
+			if (/*(noeudPrec->val + lambda1*(p->coefCumules1[i]+1) + lambda2*p->coefCumules2[i]+1) >= LB*/true) {
 				k = 0;
 				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
@@ -92,17 +117,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 				}
 				// S'il n'existe pas on le crée
 				if (k == nb) {
-					nouveau = (Noeud *) malloc(sizeof(Noeud));
-					nouveau->val = noeudPrec->val;
-					nouveau->poids1 = noeudPrec->poids1;
-					nouveau->poids2 = noeudPrec->poids2;
-					nouveau->obj1 = noeudPrec->obj1;
-					nouveau->obj2 = noeudPrec->obj2;
-					nouveau->precBest = noeudPrec;
-					nouveau->precAlt = NULL;
-					nouveau->existeAlt = noeudPrec->existeAlt;
-					nouveau->ajoutForce = noeudPrec->ajoutForce;
-					noeuds[i][nb] = nouveau;
+					noeuds[i][nb] = creerNoeudNonAjout(noeudPrec);
 					++nb;
 				} else {
 					noeud = noeuds[i][k];

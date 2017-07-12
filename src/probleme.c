@@ -223,6 +223,12 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 }
 
 Probleme *fixer01(Probleme *p, int y1, int y2) {
+	/*for (int i = 0; i < p->n; ++i) {
+		printf("%d\t%d\t%d\t%d\n", p->coefficients1[i], p->coefficients2[i], p->poids1[i], p->poids2[i]);
+	}
+	printf("\n\n");*/
+
+
 	solution *s1, *s2;
 	Probleme *sousProb;
 	int ret;
@@ -282,6 +288,12 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 				sousProb->indVar[j] = sousProb->indVar[j+1];
 			}
 			++nb0;
+
+			/*for (int i = 0; i < sousProb->n; ++i) {
+				printf("%d\t%d\t%d\t%d\n", sousProb->coefficients1[i], sousProb->coefficients2[i], sousProb->poids1[i], sousProb->poids2[i]);
+			}
+			printf("\n\n");*/
+
 		} else {
 			free(s2->tab);
 			free(s2);
@@ -312,6 +324,10 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 					sousProb->indVar[j] = sousProb->indVar[j+1];
 				}
 				++nb0;
+				/*for (int i = 0; i < sousProb->n; ++i) {
+					printf("%d\t%d\t%d\t%d\n", sousProb->coefficients1[i], sousProb->coefficients2[i], sousProb->poids1[i], sousProb->poids2[i]);
+				}
+				printf("\n\n");*/
 			} else {
 				++i;
 			}/* else {
