@@ -5,39 +5,50 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-Noeud *creerNoeudAjout(Probleme *p, Noeud *noeudPrec, int i) {
+Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec) {
 	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
-	nouveau->obj1 = noeudPrec->obj1 + p->coefficients1[i];
-	nouveau->obj2 = noeudPrec->obj2 + p->coefficients2[i];
-	nouveau->val = + p->lambda1*nouveau->obj1 + p->lambda2*nouveau->obj2;
-	nouveau->poids1 = noeudPrec->poids1 + p->poids1[i];
-	nouveau->poids2 = noeudPrec->poids2 + p->poids2[i];
+	nouveau->obj1 = noeudPrec->obj1 + p->profits1[i];
+	nouveau->obj2 = noeudPrec->obj2 + p->profits2[i];
+	nouveau->val = noeudPrec->val + p->lambda1*p->profits1[i] + p->lambda2*p->profits2[i];
+	nouveau->w1 = noeudPrec->w1 + p->weights1[i];
+	nouveau->w2 = noeudPrec->w2 + p->weights2[i];
 	nouveau->precBest = noeudPrec;
 	nouveau->precAlt = NULL;
 	nouveau->existeAlt = noeudPrec->existeAlt;
 	nouveau->ajoutForce = noeudPrec->ajoutForce;
+
 	return nouveau;
 }
-Noeud *creerNoeudNonAjout(Noeud *noeudPrec) {
+
+Noeud *creerNoeudSansAjout(Noeud *noeudPrec) {
 	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
-	nouveau->val = noeudPrec->val;
-	nouveau->poids1 = noeudPrec->poids1;
-	nouveau->poids2 = noeudPrec->poids2;
 	nouveau->obj1 = noeudPrec->obj1;
 	nouveau->obj2 = noeudPrec->obj2;
+	nouveau->val = noeudPrec->val;
+	nouveau->w1 = noeudPrec->w1;
+	nouveau->w2 = noeudPrec->w2;
 	nouveau->precBest = noeudPrec;
 	nouveau->precAlt = NULL;
 	nouveau->existeAlt = noeudPrec->existeAlt;
 	nouveau->ajoutForce = noeudPrec->ajoutForce;
+
 	return nouveau;
 }
 
-void modifierBestPrecAjout(Noeud *noeud, Probleme *p, Noeud *noeudPrec, int i) {
-
+void modifierNoeudAvecAjout(Probleme *p, int i, Noeud *noeudModif, Noeud *noeudPrec) {
+	noeudModif->val = noeudPrec->val + p->lambda1*p->profits1[i] + p->lambda2*p->profits2[i];
+	noeudModif->obj1 = noeudPrec->obj1 + p->profits1[i];
+	noeudModif->obj2 = noeudPrec->obj2 + p->profits2[i];
+	noeudModif->precAlt = noeudModif->precBest;
+	noeudModif->precBest = noeudPrec;
 }
 
-void modifierBestPrecNonAjout(Noeud *noeud, Noeud *noeudPrec) {
-	
+void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec) {
+	noeudModif->val = noeudPrec->val;
+	noeudModif->obj1 = noeudPrec->obj1;
+	noeudModif->obj2 = noeudPrec->obj2;
+	noeudModif->precAlt = noeudModif->precBest;
+	noeudModif->precBest = noeudPrec;
 }
 
 Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) {
@@ -52,8 +63,8 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 	nouveau->val = 0;
 	nouveau->obj1 = 0;
 	nouveau->obj2 = 0;
-	nouveau->poids1 = 0;
-	nouveau->poids2 = 0;
+	nouveau->w1 = 0;
+	nouveau->w2 = 0;
 	nouveau->precBest = NULL;
 	nouveau->precAlt = NULL;
 	nouveau->existeAlt = false;
@@ -79,26 +90,22 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			noeudPrec = noeuds[i-1][j];
 			int k = 0;
 			// Si l'objet entre dans le sac
-			if ((noeudPrec->poids1 + p->poids1[i-1] <= p->capacite1) && (noeudPrec->poids2 + p->poids2[i-1] <= p->capacite2)) {
-				int futurP1 = noeudPrec->poids1 + p->poids1[i-1];
-				int futurP2 = noeudPrec->poids2 + p->poids2[i-1];
+			if ((noeudPrec->w1 + p->weights1[i-1] <= p->omega1) && (noeudPrec->w2 + p->weights2[i-1] <= p->omega2)) {
+				int futurP1 = noeudPrec->w1 + p->weights1[i-1];
+				int futurP2 = noeudPrec->w2 + p->weights2[i-1];
 				// On regarde si le noeud à ajouter existe déjà
-				while ((k < nb) && ((noeuds[i][k]->poids1 != futurP1) || (noeuds[i][k]->poids2 != futurP2))) {
+				while ((k < nb) && ((noeuds[i][k]->w1 != futurP1) || (noeuds[i][k]->w2 != futurP2))) {
 					++k;
 				}
 				// S'il n'existe pas on le crée
 				if (k == nb) {
-					noeuds[i][nb] = creerNoeudAjout(p, noeudPrec, i-1);
+					noeuds[i][nb] = creerNoeudAvecAjout(p, i-1, noeudPrec);
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
 					// S'il existe et que le noeud précédent est meilleur on le modifie
-					if (noeud->val < noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1]) {
-						noeud->val = noeudPrec->val + lambda1*p->coefficients1[i-1] + lambda2*p->coefficients2[i-1];
-						noeud->obj1 = noeudPrec->obj1 + p->coefficients1[i-1];
-						noeud->obj2 = noeudPrec->obj2 + p->coefficients2[i-1];
-						noeud->precAlt = noeuds[i][k]->precBest;
-						noeud->precBest = noeudPrec;
+					if (noeud->val < noeudPrec->val + lambda1*p->profits1[i-1] + lambda2*p->profits2[i-1]) {
+						modifierNoeudAvecAjout(p, i-1, noeud, noeudPrec);
 					// Sinon on ajoute le noeud précédent en alternatif
 					} else {
 						noeud->precAlt = noeudPrec;
@@ -109,25 +116,21 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			}
 			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
 			// Alors on crée le noeud
-			if (/*(noeudPrec->val + lambda1*(p->coefCumules1[i]+1) + lambda2*p->coefCumules2[i]+1) >= LB*/true) {
+			if (true) {		// Futur condition ?
 				k = 0;
 				// On regarde si le noeud à ajouter existe déjà
-				while ((k < nb) && ((noeuds[i][k]->poids1 != noeudPrec->poids1) || (noeuds[i][k]->poids2 != noeudPrec->poids2))) {
+				while ((k < nb) && ((noeuds[i][k]->w1 != noeudPrec->w1) || (noeuds[i][k]->w2 != noeudPrec->w2))) {
 					++k;
 				}
 				// S'il n'existe pas on le crée
 				if (k == nb) {
-					noeuds[i][nb] = creerNoeudNonAjout(noeudPrec);
+					noeuds[i][nb] = creerNoeudSansAjout(noeudPrec);
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
 					// S'il existe et que le noeud précédent est meilleur on le modifie
 					if (noeud->val < noeudPrec->val) {
-						noeud->val = noeudPrec->val;
-						noeud->obj1 = noeudPrec->obj1;
-						noeud->obj2 = noeudPrec->obj2;
-						noeud->precAlt = noeuds[i][k]->precBest;
-						noeud->precBest = noeudPrec;
+						modifierNoeudSansAjout(noeud, noeudPrec);
 					// Sinon on ajoute le noeud précédent en alternatif
 					} else {
 						noeud->precAlt = noeudPrec;
@@ -175,12 +178,12 @@ void desallouerGraphe(int *nSol, Noeud ***noeuds, int n) {
 }
 
 void afficherGraphe(Noeud *node, int n) {
-	printf("(%d,%d,%d) :\n", n, node->poids1, node->poids2);
+	printf("(%d,%d,%d) :\n", n, node->w1, node->w2);
 	printf("val = %d\n", node->val);
 	if (node->precBest != NULL) {
-		printf("precBest = (%d,%d,%d)\n", n-1, node->precBest->poids1, node->precBest->poids2);
+		printf("precBest = (%d,%d,%d)\n", n-1, node->precBest->w1, node->precBest->w2);
 		if (node->precAlt != NULL) {
-			printf("precAlt = (%d,%d,%d)\n", n-1, node->precAlt->poids1, node->precAlt->poids2);
+			printf("precAlt = (%d,%d,%d)\n", n-1, node->precAlt->w1, node->precAlt->w2);
 		}
 	}
 }
@@ -201,11 +204,11 @@ void afficherChemin(Chemin *chem, int n) {
 		--nDev;
 		while (nDev >= 0) {
 			while (n > deviations[nDev]) {
-				printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+				printf("(%d,%d,%d)<-", n, noeud->w1, noeud->w2);
 				noeud = noeud->precBest;
 				--n;
 			}
-			printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+			printf("(%d,%d,%d)<-", n, noeud->w1, noeud->w2);
 			noeud = noeud->precAlt;
 			--n;
 			--nDev;
@@ -215,10 +218,10 @@ void afficherChemin(Chemin *chem, int n) {
 	}
 
 	for ( ; n > 0; --n) {
-		printf("(%d,%d,%d)<-", n, noeud->poids1, noeud->poids2);
+		printf("(%d,%d,%d)<-", n, noeud->w1, noeud->w2);
 		noeud = noeud->precBest;
 	}
-	printf("(%d,%d,%d)", n, noeud->poids1, noeud->poids2);
+	printf("(%d,%d,%d)", n, noeud->w1, noeud->w2);
 	
 	printf("\n");
 }

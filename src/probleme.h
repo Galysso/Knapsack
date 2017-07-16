@@ -13,16 +13,12 @@ typedef struct Solution Solution;
 struct Probleme {
 	char *nomFichier;
 	int n;					// nombre d'objets
-	int capacite1;			// capacité du sac à dos
-	int capacite2;
-	int *coefficients1;		// coefficients des variables dans la fonction objectif
-	int *coefficients2;
-	int *poids1;			// poids des variables dans la fonction objectif
-	int *poids2;
-	int *poidsCumules1;
-	int *poidsCumules2;
-	int *coefCumules1;
-	int *coefCumules2;
+	int omega1;				// capacité du sac à dos
+	int omega2;
+	int *profits1;		// coefficients des variables dans la fonction objectif
+	int *profits2;
+	int *weights1;			// poids des variables dans la fonction objectif
+	int *weights2;
 	int *indVar;
 	int lambda1;
 	int lambda2;
@@ -31,8 +27,8 @@ struct Probleme {
 struct Solution {
 	int obj1;
 	int obj2;
-	int poids1;
-	int poids2;
+	int w1;
+	int w2;
 	bool *var;						// vrai si l'objet i est dans la solution, faux sinon
 };
 

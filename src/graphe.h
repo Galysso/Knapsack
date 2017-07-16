@@ -15,8 +15,8 @@ struct Noeud {
 	int val;			// valeur de la fonction objectif de la somme pondérée
 	int obj1;			// valeur de la fonction objectif 1
 	int obj2;			// valeur de la fonction objectif 2
-	int poids1;		// 1er poids total utilisé dans le sac
-	int poids2;		// 2eme poids total utilisé dans le sac
+	int w1;				// 1er poids total des objets ajoutés
+	int w2;				// 2eme poids total des objets ajoutés
 	bool existeAlt;				// vrai s'il existe au moins deux chemins allant de la racine à ce noeud
 	Noeud *precBest;			// noeud précédent donnant le meilleur chemin
 	Noeud *precAlt;				// noeud précédent alternatif au meilleur chemin
@@ -33,12 +33,12 @@ struct Chemin {
 	bool existeAlt;				// vrai si la solution admet au moins une réoptimisation
 };
 
-Noeud *creerNoeudAjout(Probleme *p, Noeud *noeudPrec, int i);
-Noeud *creerNoeudNonAjout(Noeud *noeudPrec);
-void modifierBestPrecAjout(Noeud *noeud, Probleme *p, Noeud *noeudPrec, int i);
-void modifierBestPrecNonAjout(Noeud *noeud, Noeud *noeudPrec);
 Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2);
 Chemin **initialiserChemins(Noeud **noeuds, int n);
+Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec);
+Noeud *creerNoeudSansAjout(Noeud *noeudPrec);
+void modifierNoeudAvecAjout(Probleme *p, int i, Noeud *noeudModif, Noeud* noeudPrec);
+void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec);
 void desallouerGraphe(int *nSol, Noeud ***noeud, int n);
 void afficherChemin(Chemin *sol, int n);
 void afficherGraphe(Noeud *racine, int n);

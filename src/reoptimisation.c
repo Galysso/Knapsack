@@ -58,9 +58,9 @@ void genererSolutions(Chemin *chem, Tas *tas, Probleme *prob) {
 			nouveauChem->chemin = chem;
 			// Conditionnelle pour savoir si l'objet considéré est ajouté ou non dans le meilleur chemin
 			if (noeud->val == noeud->precBest->val) {
-				nouveauChem->val = solVal - noeud->val + noeud->precAlt->val + prob->lambda1*prob->coefficients1[n-1] + prob->lambda2*prob->coefficients2[n-1];
-				nouveauChem->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1 + prob->coefficients1[n-1];
-				nouveauChem->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2 + prob->coefficients2[n-1];
+				nouveauChem->val = solVal - noeud->val + noeud->precAlt->val + prob->lambda1*prob->profits1[n-1] + prob->lambda2*prob->profits2[n-1];
+				nouveauChem->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1 + prob->profits1[n-1];
+				nouveauChem->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2 + prob->profits2[n-1];
 			} else {
 				nouveauChem->val = solVal - noeud->val + noeud->precAlt->val;
 				nouveauChem->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1;
