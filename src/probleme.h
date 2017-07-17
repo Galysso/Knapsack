@@ -13,9 +13,10 @@ typedef struct Solution Solution;
 struct Probleme {
 	char *nomFichier;
 	int n;					// nombre d'objets
+	int nBis;				// nombre d'objets du sous-problème
 	int omega1;				// capacité du sac à dos
 	int omega2;
-	int *profits1;		// coefficients des variables dans la fonction objectif
+	int *profits1;			// coefficients des variables dans la fonction objectif
 	int *profits2;
 	int *weights1;			// poids des variables dans la fonction objectif
 	int *weights2;
@@ -35,6 +36,6 @@ struct Solution {
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-Probleme *fixer01(Probleme *p, int y1, int y2);
+void fixer01(Probleme *p, int y1, int y2);
 
 #endif

@@ -36,8 +36,8 @@ Probleme *genererProbleme(char *nomFichier) {
 
 		for (int i = 0; i < nbVariable; ++i) {
 			assert(fscanf(fichier, "%d", &profits1[i]));
-			assert(fscanf(fichier, "%d", &weights1[i]));
 			assert(fscanf(fichier, "%d", &profits2[i]));
+			assert(fscanf(fichier, "%d", &weights1[i]));
 			assert(fscanf(fichier, "%d", &weights2[i]));
 			indVar[i] = i;
 		}
@@ -119,7 +119,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud, *noeudPrec;
-	int n = p->n;
+	int n = p->nBis;
 
 	bool *var = (bool *) malloc(n*sizeof(bool));
 
@@ -176,12 +176,10 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-Probleme *fixer01(Probleme *p, int y1, int y2) {
+void fixer01(Probleme *p, int y1, int y2) {
 	solution *s1, *s2;
-	Probleme *sousProb;
 	int ret;
 	donnees d;
-	int cpt;
 	int LB = p->lambda1*(y1+1) + p->lambda2*(y2+1);
 	int nb0;
 
@@ -192,26 +190,30 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 
 	nb0 = 0;
 
-	sousProb = genererProblemeGautier(p->nomFichier);
-	sousProb->lambda1 = p->lambda1;
-	sousProb->lambda2 = p->lambda2;
+	for (int i = 0; i < p->n; ++i) {
+		p->indVar[i] = i;
+	}
 
-	d.nbItem = sousProb->n-1;
+	p->nBis = p->n;
+	d.nbItem = p->nBis-1;
 	int i = 0;
 	while (i < d.nbItem) {
-		d.omega1 = sousProb->omega1 - sousProb->weights1[i];
-		d.omega2 = sousProb->omega2 - sousProb->weights2[i];
-		d.nbItem = sousProb->n-1;
+		int indI = p->indVar[i];
+		d.omega1 = p->omega1 - p->weights1[indI];
+		d.omega2 = p->omega2 - p->weights2[indI];
+		d.nbItem = p->nBis-1;
 		d.maxZ1 = 0;
 		for (int j = 0; j < i; ++j) {
-			d.p1[j] = sousProb->profits1[j];
-			d.w1[j] = sousProb->weights1[j];
-			d.w2[j] = sousProb->weights2[j];
+			int indJ = p->indVar[j];
+			d.p1[j] = p->profits1[indJ];
+			d.w1[j] = p->weights1[indJ];
+			d.w2[j] = p->weights2[indJ];
 		}
-		for (int j = i+1; j < sousProb->n; ++j) {
-			d.p1[j-1] = sousProb->profits1[j];
-			d.w1[j-1] = sousProb->weights1[j];
-			d.w2[j-1] = sousProb->weights2[j];
+		for (int j = i+1; j < d.nbItem; ++j) {
+			int indJ = p->indVar[j];
+			d.p1[j-1] = p->profits1[indJ];
+			d.w1[j-1] = p->weights1[indJ];
+			d.w2[j-1] = p->weights2[indJ];
 		}
 
 		ret = initDichoMu(&s1,&s2,&d);
@@ -219,31 +221,26 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 			startDichoMu(&s1,&s2,&d);
 		}
 
-
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			free(s2);
 			s2 = s1;
 		}
-		// Si la borne supérieur de la solution optimale n'atteint pas le triangle
-		if (s2->z1 + sousProb->profits1[i] < y1) {
+		// Si la borne supérieure de la solution optimale n'atteint pas le triangle
+		if (s2->z1 + p->profits1[indI] < y1) {
 			// On fixe la variable à 0, donc on la retire du problème
-			sousProb->n -= 1;
-			for (int j = i; j < sousProb->n; ++j) {
-				sousProb->profits1[j] = sousProb->profits1[j+1];
-				sousProb->profits2[j] = sousProb->profits2[j+1];
-				sousProb->weights1[j] = sousProb->weights1[j+1];
-				sousProb->weights2[j] = sousProb->weights2[j+1];
-				sousProb->indVar[j] = sousProb->indVar[j+1];
+			p->nBis -= 1;
+			for (int j = i; j < p->nBis; ++j) {
+				p->indVar[j] = p->indVar[j+1];
 			}
 			++nb0;
 		} else {
 			free(s2->tab);
 			free(s2);
 			for (int j = 0; j < i; ++j) {
-				d.p1[j] = sousProb->profits2[j];
+				d.p1[j] = p->profits2[p->indVar[j]];
 			}
-			for (int j = i+1; j < sousProb->n; ++j) {
-				d.p1[j-1] = sousProb->profits2[j];
+			for (int j = i+1; j < p->nBis; ++j) {
+				d.p1[j-1] = p->profits2[p->indVar[j]];
 			}
 
 			ret = initDichoMu(&s1,&s2,&d);
@@ -256,26 +253,23 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 				s2 = s1;
 			}
 
-			if (s2->z1 + sousProb->profits2[i] < y2) {
-				sousProb->n -= 1;
-				for (int j = i; j < sousProb->n; ++j) {
-					sousProb->profits1[j] = sousProb->profits1[j+1];
-					sousProb->profits2[j] = sousProb->profits2[j+1];
-					sousProb->weights1[j] = sousProb->weights1[j+1];
-					sousProb->weights2[j] = sousProb->weights2[j+1];
-					sousProb->indVar[j] = sousProb->indVar[j+1];
+			if (s2->z1 + p->profits2[indI] < y2) {
+				p->nBis -= 1;
+				for (int j = i; j < p->nBis; ++j) {
+					p->indVar[j] = p->indVar[j+1];
 				}
 				++nb0;
 			} else {
 				++i;
-			}/* else {
+			}
+			/* else {
 				free(s2->tab);
 				free(s2);
 				for (int j = 0; j < i; ++j) {
-					d.p1[j] = p->lambda1*sousProb->profits1[j] + p->lambda2*sousProb->profits2[j];
+					d.p1[j] = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
 				}
-				for (int j = i+1; j < sousProb->n; ++j) {
-					d.p1[j-1] = p->lambda1*sousProb->profits1[j] + p->lambda2*sousProb->profits2[j];
+				for (int j = i+1; j < p->nBis; ++j) {
+					d.p1[j-1] = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
 				}
 
 				ret = initDichoMu(&s1,&s2,&d);
@@ -291,13 +285,9 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 				printf("z1=%d\tLB=%d\n", s2->z1, p->lambda1*(y1+1) + p->lambda2*(y2+1));
 				if (s2->z1 <= p->lambda1*(y1+1) + p->lambda2*(y2+1)) {
 					printf("3\n");
-					sousProb->n -= 1;
-					for (int j = i; j < sousProb->n; ++j) {
-						sousProb->profits1[j] = sousProb->profits1[j+1];
-						sousProb->profits2[j] = sousProb->profits2[j+1];
-						sousProb->weights1[j] = sousProb->weights1[j+1];
-						sousProb->weights2[j] = sousProb->weights2[j+1];
-						sousProb->indVar[j] = sousProb->indVar[j+1];
+					p->nBis -= 1;
+					for (int j = i; j < p->nBis; ++j) {
+						p->indVar[j] = p->indVar[j+1];
 					}
 					++nb0;
 				} else {
@@ -319,6 +309,4 @@ Probleme *fixer01(Probleme *p, int y1, int y2) {
 	printf("nb0=%d\n", nb0);
 	
 	// J'adore qu'un plan se déroule sans accroc!
-
-	return sousProb;
 }

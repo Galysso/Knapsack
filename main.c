@@ -3,6 +3,8 @@
 #include "src/reoptimisation.h"
 #include "src/knapglpk.h"
 
+#include <assert.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -121,18 +123,23 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		p->lambda2 = lambda2;
 
 		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
-	Probleme *sousProb = fixer01(p, solSup1->obj1, solSup2->obj2);
+		fixer01(p, solSup1->obj1, solSup2->obj2);
 
-		Tas *tas = TAS_initialiser(p->n*p->n);
+		/*for (int j = 0; j < p->nBis; ++j) {
+			printf("%d\n", p->indVar[j]);
+		}*/
+
+		Tas *tas = TAS_initialiser(p->nBis*p->nBis);
 		Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
-		Chemin **chemins = initialiserChemins(graphe[p->n], nNoeuds[p->n]);
+		Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
 
-		for (int j = 0; j < nNoeuds[p->n]; ++j) {
+		for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
 			TAS_ajouter(tas, chemins[j]);
 		}
 
 		ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
 		ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
+
 		while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
 			Chemin *chem = TAS_maximum(tas);
 			TAS_retirerMax(tas);
@@ -148,7 +155,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			genererSolutions(chem, tas, p);
 		}
 
-		desallouerGraphe(nNoeuds, graphe, p->n+1);
+		desallouerGraphe(nNoeuds, graphe, p->nBis+1);
 	}
 
 	return resultat;
@@ -158,6 +165,7 @@ int main() {
 	clock_t debut, fin;
 
 	Probleme *p = genererProblemeGautier("instance100.DAT");
+	//Probleme *p = genererProbleme("A4.DAT");
 	int nbSol;
 
 	debut = clock();

@@ -73,15 +73,16 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 	int nbPrec;	// le nombre de noeuds de la dernière colonne construite
 	int nb = 1;	// le nombre de noeuds de la colonne en construction
 
-	noeuds = (Noeud ***) malloc((p->n+1)*sizeof(Noeud **));
+	noeuds = (Noeud ***) malloc((p->nBis+1)*sizeof(Noeud **));
 	noeuds[0] = (Noeud **) malloc(sizeof(Noeud *));
 	noeuds[0][0] = nouveau;
 
-	*nSol = malloc((p->n+1)*sizeof(int));
+	*nSol = malloc((p->nBis+1)*sizeof(int));
 	(*nSol)[0] = 1;
 
 	// Pour chaque objet du sac
-	for (int i = 1; i <= p->n; ++i) {
+	for (int i = 1; i <= p->nBis; ++i) {
+		int indI = p->indVar[i-1];
 		nbPrec = nb;
 		nb = 0;
 		// On alloue deux fois le nombre de noeuds obtenus précédemment
@@ -90,22 +91,22 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			noeudPrec = noeuds[i-1][j];
 			int k = 0;
 			// Si l'objet entre dans le sac
-			if ((noeudPrec->w1 + p->weights1[i-1] <= p->omega1) && (noeudPrec->w2 + p->weights2[i-1] <= p->omega2)) {
-				int futurP1 = noeudPrec->w1 + p->weights1[i-1];
-				int futurP2 = noeudPrec->w2 + p->weights2[i-1];
+			if ((noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2)) {
+				int futurP1 = noeudPrec->w1 + p->weights1[indI];
+				int futurP2 = noeudPrec->w2 + p->weights2[indI];
 				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->w1 != futurP1) || (noeuds[i][k]->w2 != futurP2))) {
 					++k;
 				}
 				// S'il n'existe pas on le crée
 				if (k == nb) {
-					noeuds[i][nb] = creerNoeudAvecAjout(p, i-1, noeudPrec);
+					noeuds[i][nb] = creerNoeudAvecAjout(p, indI, noeudPrec);
 					++nb;
 				} else {
 					noeud = noeuds[i][k];
 					// S'il existe et que le noeud précédent est meilleur on le modifie
-					if (noeud->val < noeudPrec->val + lambda1*p->profits1[i-1] + lambda2*p->profits2[i-1]) {
-						modifierNoeudAvecAjout(p, i-1, noeud, noeudPrec);
+					if (noeud->val < noeudPrec->val + lambda1*p->profits1[indI] + lambda2*p->profits2[indI]) {
+						modifierNoeudAvecAjout(p, indI, noeud, noeudPrec);
 					// Sinon on ajoute le noeud précédent en alternatif
 					} else {
 						noeud->precAlt = noeudPrec;
