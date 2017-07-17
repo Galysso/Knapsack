@@ -23,6 +23,9 @@ struct Probleme {
 	int *indVar;
 	int lambda1;
 	int lambda2;
+
+	int *pCumul1;
+	int *pCumul2;
 };
 
 struct Solution {

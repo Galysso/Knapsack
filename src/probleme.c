@@ -51,6 +51,9 @@ Probleme *genererProbleme(char *nomFichier) {
 		p->weights1 = weights1;
 		p->weights2 = weights2;
 		p->indVar = indVar;
+
+		p->pCumul1 = (int *) malloc((1+nbVariable)*sizeof(int));
+		p->pCumul2 = (int *) malloc((1+nbVariable)*sizeof(int));
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -108,6 +111,9 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 		p->weights1 = weights1;
 		p->weights2 = weights2;
 		p->indVar = indVar;
+
+		p->pCumul1 = (int *) malloc((1+nbVariable)*sizeof(int));
+		p->pCumul2 = (int *) malloc((1+nbVariable)*sizeof(int));
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -205,13 +211,13 @@ void fixer01(Probleme *p, int y1, int y2) {
 		d.maxZ1 = 0;
 		for (int j = 0; j < i; ++j) {
 			int indJ = p->indVar[j];
-			d.p1[j] = p->profits1[indJ];
+			d.p1[j] = p->lambda1*p->profits1[p->indVar[j]] + p->lambda2*p->profits2[indJ];
 			d.w1[j] = p->weights1[indJ];
 			d.w2[j] = p->weights2[indJ];
 		}
-		for (int j = i+1; j < d.nbItem; ++j) {
+		for (int j = i+1; j <= d.nbItem; ++j) {
 			int indJ = p->indVar[j];
-			d.p1[j-1] = p->profits1[indJ];
+			d.p1[j-1] = p->lambda1*p->profits1[p->indVar[j]] + p->lambda2*p->profits2[indJ];
 			d.w1[j-1] = p->weights1[indJ];
 			d.w2[j-1] = p->weights2[indJ];
 		}
@@ -226,7 +232,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 			s2 = s1;
 		}
 		// Si la borne supérieure de la solution optimale n'atteint pas le triangle
-		if (s2->z1 + p->profits1[indI] < y1) {
+		if (s2->z1 + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
 			// On fixe la variable à 0, donc on la retire du problème
 			p->nBis -= 1;
 			for (int j = i; j < p->nBis; ++j) {
@@ -260,16 +266,13 @@ void fixer01(Probleme *p, int y1, int y2) {
 				}
 				++nb0;
 			} else {
-				++i;
-			}
-			/* else {
 				free(s2->tab);
 				free(s2);
 				for (int j = 0; j < i; ++j) {
-					d.p1[j] = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
+					d.p1[j] = p->profits1[p->indVar[j]];
 				}
 				for (int j = i+1; j < p->nBis; ++j) {
-					d.p1[j-1] = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
+					d.p1[j-1] = p->profits1[p->indVar[j]];
 				}
 
 				ret = initDichoMu(&s1,&s2,&d);
@@ -282,9 +285,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 					s2 = s1;
 				}
 
-				printf("z1=%d\tLB=%d\n", s2->z1, p->lambda1*(y1+1) + p->lambda2*(y2+1));
-				if (s2->z1 <= p->lambda1*(y1+1) + p->lambda2*(y2+1)) {
-					printf("3\n");
+				if (s2->z1 + p->profits1[indI] < y1) {
 					p->nBis -= 1;
 					for (int j = i; j < p->nBis; ++j) {
 						p->indVar[j] = p->indVar[j+1];
@@ -293,7 +294,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 				} else {
 					++i;
 				}
-			}*/
+			}
 		}
 
 		//getchar();
@@ -302,6 +303,20 @@ void fixer01(Probleme *p, int y1, int y2) {
 		free(s2->tab);
 		free(s2);
 	}
+
+	// calcul des profits cumules
+	int indJ = p->indVar[p->nBis-1];
+	p->pCumul1[p->nBis] = 0;
+	p->pCumul2[p->nBis] = 0;
+	for (int j = p->nBis-1; j >= 0; --j) {
+		indJ = p->indVar[j];
+		p->pCumul1[j] = p->pCumul1[j+1] + p->profits1[indJ];
+		p->pCumul2[j] = p->pCumul2[j+1] + p->profits2[indJ];
+	}
+
+	/*for (int j = 0; j <= p->nBis; ++j) {
+		printf("%d\t%d\n", p->pCumul1[j], p->pCumul2[j]);
+	}*/
 
 	free(d.p1);
 	free(d.w1);

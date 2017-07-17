@@ -123,39 +123,38 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		p->lambda2 = lambda2;
 
 		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
+		//printf("(%d,%d) /\\ (%d,%d)\n", solSup1->obj1, solSup1->obj2, solSup1->obj1, solSup2->obj2);
 		fixer01(p, solSup1->obj1, solSup2->obj2);
 
-		/*for (int j = 0; j < p->nBis; ++j) {
-			printf("%d\n", p->indVar[j]);
-		}*/
+		if (p->nBis > 0) {
+			Tas *tas = TAS_initialiser(p->nBis*p->nBis);
+			Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
+			Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
 
-		Tas *tas = TAS_initialiser(p->nBis*p->nBis);
-		Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
-		Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
-
-		for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
-			TAS_ajouter(tas, chemins[j]);
-		}
-
-		ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
-		ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
-
-		while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
-			Chemin *chem = TAS_maximum(tas);
-			TAS_retirerMax(tas);
-			Solution *sol = creerSolution(p, chem);
-			if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, *nbSol, sol)) {
-				ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
-				ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
-				newLB = meilleureBorne(solutionsLB, nbSolLB, p);
-				if (newLB > LB) {
-					LB = newLB;
-				}
+			for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
+				TAS_ajouter(tas, chemins[j]);
 			}
-			genererSolutions(chem, tas, p);
-		}
 
-		desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
+			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
+
+			while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
+				Chemin *chem = TAS_maximum(tas);
+				TAS_retirerMax(tas);
+				Solution *sol = creerSolution(p, chem);
+				if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, *nbSol, sol)) {
+					ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
+					ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
+					newLB = meilleureBorne(solutionsLB, nbSolLB, p);
+					if (newLB > LB) {
+						LB = newLB;
+					}
+				}
+				genererSolutions(chem, tas, p);
+			}
+
+			desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+		}
 	}
 
 	return resultat;
@@ -165,7 +164,7 @@ int main() {
 	clock_t debut, fin;
 
 	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("A4.DAT");
+	//Probleme *p = genererProbleme("A1.DAT");
 	int nbSol;
 
 	debut = clock();

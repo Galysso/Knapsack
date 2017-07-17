@@ -117,7 +117,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			}
 			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
 			// Alors on crée le noeud
-			if (true) {		// Futur condition ?
+			if (noeudPrec->val + lambda1*p->pCumul1[i] + lambda2*p->pCumul2[i] >= LB) {		// Future condition ?
 				k = 0;
 				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->w1 != noeudPrec->w1) || (noeuds[i][k]->w2 != noeudPrec->w2))) {
