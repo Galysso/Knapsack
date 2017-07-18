@@ -121,7 +121,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 	return p;
 }
 
-// Transforme un chemin en un vecteur de booléens correspondant à la solution
+// Transforme un chemin en un vecteur de booléens correspondant à la solution (du sous problème => à corriger)
 Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud, *noeudPrec;

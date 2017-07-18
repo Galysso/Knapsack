@@ -90,11 +90,11 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
 			int k = 0;
-			// Si l'objet entre dans le sac
+			// Si l'objet entre dans le sac alors on cherche à ajouter le noeud correspondant
 			if ((noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2)) {
 				int futurP1 = noeudPrec->w1 + p->weights1[indI];
 				int futurP2 = noeudPrec->w2 + p->weights2[indI];
-				// On regarde si le noeud à ajouter existe déjà
+				// On cherche si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->w1 != futurP1) || (noeuds[i][k]->w2 != futurP2))) {
 					++k;
 				}

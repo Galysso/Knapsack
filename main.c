@@ -3,11 +3,23 @@
 #include "src/reoptimisation.h"
 #include "src/knapglpk.h"
 
-#include <assert.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+void plot(Solution **solutions, int nbSol) {
+    FILE *temp = fopen("nonDominated.dat", "w");
+    FILE *gnuplotPipe = popen ("gnuplot -persistent", "w");
+    for (int i=0; i < nbSol; i++) {
+		fprintf(temp, "%d %d \n", solutions[i]->obj1, solutions[i]->obj2); //Write the data to a temporary file
+	}
+
+	fclose(temp);
+	fprintf(gnuplotPipe, "set title \"Points non dominés\"\n"); //Send commands to gnuplot one by one.
+	fflush(gnuplotPipe);
+	fprintf(gnuplotPipe, "plot 'nonDominated.dat' using 1:2\n");
+	fflush(gnuplotPipe);
+}
 
 // Ajoute une solution à la liste des solutions efficaces
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
@@ -193,19 +205,7 @@ int main() {
 	printf("%d solutions:\n", nbSol);
 	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
 
-
-	/*typedef struct
-	{
-		int nbItem; // nombre d'objets dans le sac
-		itype *p1; // coefficients premier objectif
-		itype *w1; // coefficients première dimension
-		itype *w2; // coefficients seconde dimension
-		int omega1; // capacité première dimension
-		int omega2; // capacité seconde dimension
-		int maxZ1; // pour combo
-	} donnees;*/
-
-	//fixer01(p, 0, 0);
-
 	printf("COCO\n");
+
+	plot(nonDominated, nbSol);
 }
