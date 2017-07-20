@@ -13,8 +13,8 @@ typedef struct Chemin Chemin;
 
 struct Noeud {
 	int val;			// valeur de la fonction objectif de la somme pondérée
-	int obj1;			// valeur de la fonction objectif 1
-	int obj2;			// valeur de la fonction objectif 2
+	int p1;			// valeur de la fonction objectif 1
+	int p2;			// valeur de la fonction objectif 2
 	int w1;				// 1er poids total des objets ajoutés
 	int w2;				// 2eme poids total des objets ajoutés
 	bool existeAlt;				// vrai s'il existe au moins deux chemins allant de la racine à ce noeud
@@ -25,8 +25,8 @@ struct Noeud {
 
 struct Chemin {
 	void *chemin;				// type Chemin s'il y a une déviation, type Noeud sinon
-	int obj1;
-	int obj2;
+	int p1;
+	int p2;
 	int val;			// valeur de la fonction objectif de la somme pondérée
 	int deviation;		// indique l'endroit où est la déviation, 0 sinon
 	int nDeviation;	// donne le nombre de fois que le chemin a été réoptimisé

@@ -7,8 +7,8 @@
 
 Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec) {
 	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
-	nouveau->obj1 = noeudPrec->obj1 + p->profits1[i];
-	nouveau->obj2 = noeudPrec->obj2 + p->profits2[i];
+	nouveau->p1 = noeudPrec->p1 + p->profits1[i];
+	nouveau->p2 = noeudPrec->p2 + p->profits2[i];
 	nouveau->val = noeudPrec->val + p->lambda1*p->profits1[i] + p->lambda2*p->profits2[i];
 	nouveau->w1 = noeudPrec->w1 + p->weights1[i];
 	nouveau->w2 = noeudPrec->w2 + p->weights2[i];
@@ -22,8 +22,8 @@ Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec) {
 
 Noeud *creerNoeudSansAjout(Noeud *noeudPrec) {
 	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
-	nouveau->obj1 = noeudPrec->obj1;
-	nouveau->obj2 = noeudPrec->obj2;
+	nouveau->p1 = noeudPrec->p1;
+	nouveau->p2 = noeudPrec->p2;
 	nouveau->val = noeudPrec->val;
 	nouveau->w1 = noeudPrec->w1;
 	nouveau->w2 = noeudPrec->w2;
@@ -37,16 +37,16 @@ Noeud *creerNoeudSansAjout(Noeud *noeudPrec) {
 
 void modifierNoeudAvecAjout(Probleme *p, int i, Noeud *noeudModif, Noeud *noeudPrec) {
 	noeudModif->val = noeudPrec->val + p->lambda1*p->profits1[i] + p->lambda2*p->profits2[i];
-	noeudModif->obj1 = noeudPrec->obj1 + p->profits1[i];
-	noeudModif->obj2 = noeudPrec->obj2 + p->profits2[i];
+	noeudModif->p1 = noeudPrec->p1 + p->profits1[i];
+	noeudModif->p2 = noeudPrec->p2 + p->profits2[i];
 	noeudModif->precAlt = noeudModif->precBest;
 	noeudModif->precBest = noeudPrec;
 }
 
 void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec) {
 	noeudModif->val = noeudPrec->val;
-	noeudModif->obj1 = noeudPrec->obj1;
-	noeudModif->obj2 = noeudPrec->obj2;
+	noeudModif->p1 = noeudPrec->p1;
+	noeudModif->p2 = noeudPrec->p2;
 	noeudModif->precAlt = noeudModif->precBest;
 	noeudModif->precBest = noeudPrec;
 }
@@ -57,12 +57,12 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
-	int LB = lambda1*(sol1->obj1+1) + lambda2*(sol2->obj2+1);
+	int LB = lambda1*(sol1->p1+1) + lambda2*(sol2->p2+1);
 
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
-	nouveau->obj1 = 0;
-	nouveau->obj2 = 0;
+	nouveau->p1 = 0;
+	nouveau->p2 = 0;
 	nouveau->w1 = 0;
 	nouveau->w2 = 0;
 	nouveau->precBest = NULL;
@@ -161,8 +161,8 @@ Chemin **initialiserChemins(Noeud **noeuds, int n) {
 		chem->deviation = 0;
 		chem->existeAlt = noeuds[i]->existeAlt;
 		chem->nDeviation = 0;
-		chem->obj1 = noeuds[i]->obj1;
-		chem->obj2 = noeuds[i]->obj2;
+		chem->p1 = noeuds[i]->p1;
+		chem->p2 = noeuds[i]->p2;
 	}
 	return chemins;
 }

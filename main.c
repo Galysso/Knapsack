@@ -7,49 +7,47 @@
 #include <stdlib.h>
 #include <time.h>
 
-void plot(Solution **solutions, int nbSol) {
-    FILE *temp = fopen("nonDominated.dat", "w");
+void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup) {
+    FILE *plotNonDom = fopen("nonDominated.dat", "w");
+    FILE *plotSolSup = fopen("solSupportees.dat", "w");
     FILE *gnuplotPipe = popen ("gnuplot -persistent", "w");
     for (int i=0; i < nbSol; i++) {
-		fprintf(temp, "%d %d \n", solutions[i]->obj1, solutions[i]->obj2); //Write the data to a temporary file
+		fprintf(plotNonDom, "%d %d \n", solutions[i]->p1, solutions[i]->p2); //Write the data to a temporary file
+	}
+	fprintf(plotSolSup, "%d %d\n", solSup[0]->p1, solSup[0]->p2);
+	for (int i = 1; i < nbSolSup; ++i) {
+		fprintf(plotSolSup, "%d %d\n", solSup[i-1]->p1, solSup[i]->p2);
+		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
+	}
+	for (int i = nbSolSup-2; i >= 0; --i) {
+		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
 	}
 
-	fclose(temp);
+	fclose(plotNonDom);
+	fclose(plotSolSup);
 	fprintf(gnuplotPipe, "set title \"Points non dominés\"\n"); //Send commands to gnuplot one by one.
 	fflush(gnuplotPipe);
-	fprintf(gnuplotPipe, "plot 'nonDominated.dat' using 1:2\n");
+	fprintf(gnuplotPipe, "plot 'nonDominated.dat' using 1:2, 'solSupportees.dat' using 1:2 with lines\n");
 	fflush(gnuplotPipe);
 }
 
-// Ajoute une solution à la liste des solutions efficaces
-void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
-	if (*nbSol == *nbSolMax) {
-		*nbSolMax = (*nbSolMax)*(*nbSolMax);
-		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+void plotSup(Solution **solSup, int nbSolSup) {
+    FILE *plotSolSup = fopen("solSupportees.dat", "w");
+    FILE *gnuplotPipe = popen ("gnuplot -persistent", "w");
+	fprintf(plotSolSup, "%d %d\n", solSup[0]->p1, solSup[0]->p2);
+	for (int i = 1; i < nbSolSup; ++i) {
+		fprintf(plotSolSup, "%d %d\n", solSup[i-1]->p1, solSup[i]->p2);
+		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
 	}
-	(*solutions)[*nbSol] = sol;
-	*nbSol = *nbSol + 1;
-}
-
-// Calcule la borne minimale actuelle
-int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p) {
-	int lambda1 = p->lambda1;
-	int lambda2 = p->lambda2;
-	int LB, LBprim;
-	Solution *solG, *sol;
-
-	LB = lambda1*(solutionsLB[0]->obj1 + 1) + lambda2*(solutionsLB[1]->obj2 + 1);
-
-	for (int i = 2; i < nbSol; ++i) {
-		solG = solutionsLB[i-1];
-		sol = solutionsLB[i];
-		LBprim = lambda1*(solG->obj1 + 1) + lambda2*(sol->obj2 + 1);
-		if (LBprim < LB) {
-			LB = LBprim;
-		}
+	for (int i = nbSolSup-2; i >= 0; --i) {
+		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
 	}
 
-	return LB;
+	fclose(plotSolSup);
+	fprintf(gnuplotPipe, "set title \"Points non dominés\"\n"); //Send commands to gnuplot one by one.
+	fflush(gnuplotPipe);
+	fprintf(gnuplotPipe, "plot 'solSupportees.dat' using 1:2 with lines\n");
+	fflush(gnuplotPipe);
 }
 
 // Ajoute la solution à la liste des points définissant les points de Nadir locaux
@@ -68,7 +66,7 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *
 
 	while (ind != min) {
 		solLB = (*solutionsLB)[ind];
-		if (sol->obj2 < solLB->obj2) {
+		if (sol->p2 < solLB->p2) {
 			min = ind;
 		} else {
 			max = ind;
@@ -76,7 +74,7 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *
 		ind = (min+max)/2;
 	}
 
-	if ((ind != *nbSol) && ((*solutionsLB)[ind]->obj2 > sol->obj2)) {
+	if ((ind != *nbSol) && ((*solutionsLB)[ind]->p2 > sol->p2)) {
 		++ind;
 	}
 
@@ -85,15 +83,6 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *
 	}
 	(*solutionsLB)[ind] = sol;
 	*nbSol = *nbSol + 1;
-}
-
-// Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
-bool estEfficace(Solution **solutions, int fin, Solution *sol) {
-	int i = 0;
-	while ((i < fin) && ((solutions[i]->obj1 < sol->obj1) || (solutions[i]->obj2 < sol->obj2))) {
-		++i;
-	}
-	return (i == fin);
 }
 
 // Fuite de mémoire : les chemins ne sont pas désalloués
@@ -115,59 +104,81 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	solutionsLB = (Solution **) malloc(nbSolLBMax*sizeof(Solution *));
 	solSup = glpkSolutionsSupportees(p, &nbSup, &nbMaxSup);
 
+	//plotSup(solSup, nbSup);
+
 	ajouterSolution(&resultat, solSup[1], nbSol, &nbSolMax);
 	ajouterSolution(&resultat, solSup[nbSup-2], nbSol, &nbSolMax);
-	for (int i = 0; i < nbSup; ++i) {
-		if (estEfficace(resultat, *nbSol, solSup[i])) {
-			ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
-		}
+	if (estEfficace(resultat, *nbSol, solSup[0])) {
+		ajouterSolution(&resultat, solSup[0], nbSol, &nbSolMax);
+	}
+	if (estEfficace(resultat, *nbSol, solSup[nbSup-1])) {
+		ajouterSolution(&resultat, solSup[nbSup-1], nbSol, &nbSolMax);
+	}
+	for (int i = 2; i < nbSup-2; ++i) {
+		ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
 	}
 
+	Solution **solAdm;
+	int nbSolAdm;
 	for (int i = 1; i < nbSup; ++i) {
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
-		nbSolLB = 0;
+		if ((solSup1->p1 < solSup2->p1 -1) && (solSup1->p2 > solSup2->p2 + 1)) {
+			nbSolLB = 0;
 
-		lambda1 = solSup1->obj2 - solSup2->obj2;
-		lambda2 = solSup2->obj1 - solSup1->obj1;
+			lambda1 = solSup1->p2 - solSup2->p2;
+			lambda2 = solSup2->p1 - solSup1->p1;
 
-		p->lambda1 = lambda1;
-		p->lambda2 = lambda2;
+			p->lambda1 = lambda1;
+			p->lambda2 = lambda2;
 
-		LB = lambda1*(solSup1->obj1+1) + lambda2*(solSup2->obj2+1);
-		//printf("(%d,%d) /\\ (%d,%d)\n", solSup1->obj1, solSup1->obj2, solSup1->obj1, solSup2->obj2);
-		fixer01(p, solSup1->obj1, solSup2->obj2);
+			LB = lambda1*(solSup1->p1+1) + lambda2*(solSup2->p2+1);
+			p->LB = LB;
+			solAdm = fixer01(p, solSup1->p1, solSup2->p2, &nbSolAdm);
 
-		if (p->nBis > 0) {
-			Tas *tas = TAS_initialiser(p->nBis*p->nBis);
-			Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
-			Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
+			if (p->nBis > 0) {
+				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
+				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
+				Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
 
-			for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
-				TAS_ajouter(tas, chemins[j]);
-			}
-
-			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
-			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
-
-			while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
-				Chemin *chem = TAS_maximum(tas);
-				TAS_retirerMax(tas);
-				Solution *sol = creerSolution(p, chem);
-				if ((sol->obj1 > solSup1->obj1) && (sol->obj2 > solSup2->obj2) && estEfficace(resultat, *nbSol, sol)) {
-					ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
-					ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
-					newLB = meilleureBorne(solutionsLB, nbSolLB, p);
-					if (newLB > LB) {
-						LB = newLB;
-					}
+				for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
+					TAS_ajouter(tas, chemins[j]);
 				}
-				genererSolutions(chem, tas, p);
-			}
 
-			desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+				ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
+				ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
+
+				while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
+					Chemin *chem = TAS_maximum(tas);
+					TAS_retirerMax(tas);
+					Solution *sol = creerSolution(p, chem);
+					if ((sol->p1 > solSup1->p1) && (sol->p2 > solSup2->p2) && estEfficace(resultat, *nbSol, sol)) {
+						ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
+						ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
+						newLB = meilleureBorne(solutionsLB, nbSolLB, p);
+						if (newLB > LB) {
+							LB = newLB;
+							p->LB = newLB;
+						}
+					}
+					genererSolutions(chem, tas, p);
+				}
+
+				desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+			}
+			//printf("COCO 1\n");
+			for (int j = 0; j < nbSolAdm; ++j) {
+				//printf("COCO\n");
+				//printf("(%d,%d)\n", solAdm[j]->p1, solAdm[j]->p2);
+				if (estEfficace(resultat, *nbSol, solAdm[j])) {
+					ajouterSolution(&resultat, solAdm[j], nbSol, &nbSolMax);
+				}
+			}
+			//printf("COCO 2\n");
 		}
 	}
+
+	//plotAll(resultat, *nbSol, solSup, nbSup);
 
 	return resultat;
 }
@@ -189,7 +200,7 @@ int main() {
 	do {
 		changement = false;
 		for (int i = 1; i < nbSol; ++i) {
-			if (nonDominated[i-1]->obj2 < nonDominated[i]->obj2) {
+			if (nonDominated[i-1]->p2 < nonDominated[i]->p2) {
 				Solution *sol = nonDominated[i];
 				nonDominated[i] = nonDominated[i-1];
 				nonDominated[i-1] = sol;
@@ -200,12 +211,16 @@ int main() {
 
 	printf("%d solutions:\n", nbSol);
 	for (int i = 0; i < nbSol; ++i) {
-		printf("(%d, %d)\n", nonDominated[i]->obj1, nonDominated[i]->obj2);
+	printf("(%d, %d):", nonDominated[i]->p1, nonDominated[i]->p2);
+		/*for (int j = 0; j < p->n; ++j) {
+			printf("%d", nonDominated[i]->var[j]);
+		}*/
+		printf("\n");
 	}
 	printf("%d solutions:\n", nbSol);
 	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
 
 	printf("COCO\n");
 
-	plot(nonDominated, nbSol);
+	//plot(nonDominated, nbSol);
 }

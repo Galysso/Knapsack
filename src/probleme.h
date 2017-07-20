@@ -23,22 +23,29 @@ struct Probleme {
 	int *indVar;
 	int lambda1;
 	int lambda2;
+	int LB;
 
 	int *pCumul1;
 	int *pCumul2;
 };
 
 struct Solution {
-	int obj1;
-	int obj2;
+	int p1;
+	int p2;
 	int w1;
 	int w2;
 	bool *var;						// vrai si l'objet i est dans la solution, faux sinon
 };
 
+// Ajoute une solution à la liste des solutions efficaces
+// Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
+// Calcule la borne minimale actuelle
+int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p);
+bool estEfficace(Solution **solutions, int fin, Solution *sol);
+void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-void fixer01(Probleme *p, int y1, int y2);
+Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol);
 
 #endif

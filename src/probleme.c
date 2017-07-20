@@ -7,6 +7,46 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// Calcule la borne minimale actuelle
+int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p) {
+	int lambda1 = p->lambda1;
+	int lambda2 = p->lambda2;
+	int LB, LBprim;
+	Solution *solG, *sol;
+
+	LB = lambda1*(solutionsLB[0]->p1 + 1) + lambda2*(solutionsLB[1]->p2 + 1);
+
+	for (int i = 2; i < nbSol; ++i) {
+		solG = solutionsLB[i-1];
+		sol = solutionsLB[i];
+		LBprim = lambda1*(solG->p1 + 1) + lambda2*(sol->p2 + 1);
+		if (LBprim < LB) {
+			LB = LBprim;
+		}
+	}
+
+	return LB;
+}
+
+// Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
+bool estEfficace(Solution **solutions, int fin, Solution *sol) {
+	int i = 0;
+	while ((i < fin) && ((solutions[i]->p1 < sol->p1) || (solutions[i]->p2 < sol->p2))) {
+		++i;
+	}
+	return (i == fin);
+}
+
+// Ajoute une solution à la liste des solutions efficaces
+void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
+	if (*nbSol == *nbSolMax) {
+		*nbSolMax = (*nbSolMax)*(*nbSolMax);
+		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+	}
+	(*solutions)[*nbSol] = sol;
+	*nbSol = *nbSol + 1;
+}
+
 Probleme *genererProbleme(char *nomFichier) {
 	Probleme *p = (Probleme *) malloc(sizeof(Probleme));
 
@@ -125,14 +165,18 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud, *noeudPrec;
-	int n = p->nBis;
+	int nBis = p->nBis;
 
-	bool *var = (bool *) malloc(n*sizeof(bool));
+	bool *var = (bool *) malloc(p->n*sizeof(bool));
 
-	sol->obj1 = chemin->obj1;
-	sol->obj2 = chemin->obj2;
+	sol->p1 = chemin->p1;
+	sol->p2 = chemin->p2;
 	int w1 = 0;
 	int w2 = 0;
+
+	for (int i = 0; i < p->n; ++i) {
+		var[i] = false;
+	}
 
 	if (chemin->nDeviation > 0) {
 		int nDev = chemin->nDeviation;
@@ -144,7 +188,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 		noeudPrec = (Noeud*) chemin->chemin;
 
 		--nDev;
-		for (int i = n-1; i >= 0; --i) {
+		for (int i = nBis-1; i >= 0; --i) {
 			noeud = noeudPrec;
 			if ((nDev >= 0) && (deviations[nDev] == i+1)) {
 				noeudPrec = noeud->precAlt;
@@ -155,23 +199,23 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 			if (noeud->w1 != noeudPrec->w1) {
 				w1 = w1 + p->weights1[i];
 				w2 = w2 + p->weights2[i];
-				var[i] = true;
-			} else {
+				var[p->indVar[i]] = true;
+			}/* else {
 				var[i] = false;
-			}
+			}*/
 		}
 	} else {
 		noeudPrec = (Noeud*) chemin->chemin;
-		for (int i = n-1; i >= 0; --i) {
+		for (int i = nBis-1; i >= 0; --i) {
 			noeud = noeudPrec;
 			noeudPrec = noeud->precBest;
 			if (noeud->w1 != noeudPrec->w1) {
 				w1 = w1 + p->weights1[i];
 				w2 = w2 + p->weights2[i];
-				var[i] = true;
-			} else {
+				var[p->indVar[i]] = true;
+			}/* else {
 				var[i] = false;
-			}
+			}*/
 		}
 	}
 
@@ -182,11 +226,18 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-void fixer01(Probleme *p, int y1, int y2) {
+Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol) {
+	Solution **solAdmissibles;
+	*nbSol = 0;
+	int nbSolMax = p->n;
+	solAdmissibles = (Solution **) malloc(nbSolMax*sizeof(Solution *));
+
+	int nbNull = 0;
 	solution *s1, *s2;
 	int ret;
 	donnees d;
-	int LB = p->lambda1*(y1+1) + p->lambda2*(y2+1);
+	int LB = p->LB;
+	int newLB;
 	int nb0;
 
 	d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
@@ -211,13 +262,13 @@ void fixer01(Probleme *p, int y1, int y2) {
 		d.maxZ1 = 0;
 		for (int j = 0; j < i; ++j) {
 			int indJ = p->indVar[j];
-			d.p1[j] = p->lambda1*p->profits1[p->indVar[j]] + p->lambda2*p->profits2[indJ];
+			d.p1[j] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
 			d.w1[j] = p->weights1[indJ];
 			d.w2[j] = p->weights2[indJ];
 		}
 		for (int j = i+1; j <= d.nbItem; ++j) {
 			int indJ = p->indVar[j];
-			d.p1[j-1] = p->lambda1*p->profits1[p->indVar[j]] + p->lambda2*p->profits2[indJ];
+			d.p1[j-1] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
 			d.w1[j-1] = p->weights1[indJ];
 			d.w2[j-1] = p->weights2[indJ];
 		}
@@ -227,6 +278,47 @@ void fixer01(Probleme *p, int y1, int y2) {
 			startDichoMu(&s1,&s2,&d);
 		}
 
+		if (s1 == NULL) {
+			++nbNull;
+			Solution *sol = malloc(sizeof(Solution *));
+			//ajouterSolution(&resultat, solSup[1], nbSol, &nbSolMax);
+			sol->p1 = p->profits1[indI];
+			sol->p2 = p->profits2[indI];
+			sol->w1 = p->weights1[indI];
+			sol->w2 = p->weights2[indI];
+			for (int j = 0; j < i; ++j) {
+				if (s2->tab[j]) {
+					int indJ = p->indVar[j];
+					sol->p1 += p->profits1[indJ];
+					sol->p2 += p->profits2[indJ];
+					sol->w1 += p->weights1[indJ];
+					sol->w2 += p->weights2[indJ];
+				}
+			}
+			for (int j = i+1; j <= d.nbItem; ++j) {
+				if (s2->tab[j-1]) {
+					int indJ = p->indVar[j];
+					sol->p1 += p->profits1[indJ];
+					sol->p2 += p->profits2[indJ];
+					sol->w1 += p->weights1[indJ];
+					sol->w2 += p->weights2[indJ];
+				}
+			}
+			if (estEfficace(solAdmissibles, *nbSol, sol)) {
+				for (int j = 0; j < *nbSol; ++j) {
+					if ((solAdmissibles[j]->p1 < sol->p1) && (solAdmissibles[j]->p2 < sol->p2)) {
+						solAdmissibles[j] = solAdmissibles[*nbSol-1];
+						--(*nbSol);
+						--j;
+					}
+				}
+				ajouterSolutionLB(&solAdmissibles, sol, nbSol, &nbSolMax);
+			}
+			newLB = meilleureBorne(solAdmissibles, *nbSol, p);
+			if (newLB > LB) {
+				LB = newLB;
+			}
+		}
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			free(s2);
 			s2 = s1;
@@ -254,6 +346,9 @@ void fixer01(Probleme *p, int y1, int y2) {
 				startDichoMu(&s1,&s2,&d);
 			}
 
+			if (s1 == NULL) {
+				++nbNull;
+			}
 			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 				free(s2);
 				s2 = s1;
@@ -280,6 +375,9 @@ void fixer01(Probleme *p, int y1, int y2) {
 					startDichoMu(&s1,&s2,&d);
 				}
 
+				if (s1 == NULL) {
+					++nbNull;
+				}
 				if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 					free(s2);
 					s2 = s1;
@@ -322,6 +420,8 @@ void fixer01(Probleme *p, int y1, int y2) {
 	free(d.w1);
 	free(d.w2);
 	printf("nb0=%d\n", nb0);
+	printf("nbNull=%d\n", nbNull);
 	
+	return solAdmissibles;
 	// J'adore qu'un plan se déroule sans accroc!
 }

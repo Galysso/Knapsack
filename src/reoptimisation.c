@@ -12,8 +12,8 @@
 void genererSolutions(Chemin *chem, Tas *tas, Probleme *prob) {
 	// On cherche le premier noeud possédant un chemin alternatif
 	int solVal = chem->val;
-	int solObj1 = chem->obj1;
-	int solObj2 = chem->obj2;
+	int solObj1 = chem->p1;
+	int solObj2 = chem->p2;
 	int n = prob->nBis;
 	Noeud *noeud;
 	Chemin *nouveauChem, *chemCourant;
@@ -60,12 +60,12 @@ void genererSolutions(Chemin *chem, Tas *tas, Probleme *prob) {
 			// Conditionnelle pour savoir si l'objet considéré est ajouté ou non dans le meilleur chemin
 			if (noeud->val == noeud->precBest->val) {
 				nouveauChem->val = solVal - noeud->val + noeud->precAlt->val + prob->lambda1*prob->profits1[indN] + prob->lambda2*prob->profits2[indN];
-				nouveauChem->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1 + prob->profits1[indN];
-				nouveauChem->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2 + prob->profits2[indN];
+				nouveauChem->p1 = solObj1 - noeud->p1 + noeud->precAlt->p1 + prob->profits1[indN];
+				nouveauChem->p2 = solObj2 - noeud->p2 + noeud->precAlt->p2 + prob->profits2[indN];
 			} else {
 				nouveauChem->val = solVal - noeud->val + noeud->precAlt->val;
-				nouveauChem->obj1 = solObj1 - noeud->obj1 + noeud->precAlt->obj1;
-				nouveauChem->obj2 = solObj2 - noeud->obj2 + noeud->precAlt->obj2;
+				nouveauChem->p1 = solObj1 - noeud->p1 + noeud->precAlt->p1;
+				nouveauChem->p2 = solObj2 - noeud->p2 + noeud->precAlt->p2;
 			}
 			nouveauChem->deviation = n;
 			nouveauChem->nDeviation = chem->nDeviation + 1;

@@ -58,14 +58,14 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
-	sol->obj1 = (int) glp_mip_obj_val(glpProb);
-	sol->obj2 = 0;
+	sol->p1 = (int) glp_mip_obj_val(glpProb);
+	sol->p2 = 0;
 	sol->w1 = 0;
 	sol->w2 = 0;
 	for (int i = 0; i < n; ++i) {
 		if (glp_mip_col_val(glpProb, i+1) > 0.1) {
 			sol->var[i] = true;
-			sol->obj2 = sol->obj2 + prob->profits2[i];
+			sol->p2 = sol->p2 + prob->profits2[i];
 			sol->w1 = sol->w1 + prob->weights1[i];
 			sol->w2 = sol->w2 + prob->weights2[i];
 		} else {
@@ -89,14 +89,14 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
-	sol->obj1 = 0;
-	sol->obj2 = (int) glp_mip_obj_val(glpProb);
+	sol->p1 = 0;
+	sol->p2 = (int) glp_mip_obj_val(glpProb);
 	sol->w1 = 0;
 	sol->w2 = 0;
 	for (int i = 0; i < n; ++i) {
 		if (glp_mip_col_val(glpProb, i+1) > 0.1) {
 			sol->var[i] = true;
-			sol->obj1 = sol->obj1 + prob->profits1[i];
+			sol->p1 = sol->p1 + prob->profits1[i];
 			sol->w1 = sol->w1 + prob->weights1[i];
 			sol->w2 = sol->w2 + prob->weights2[i];
 		} else {
@@ -105,7 +105,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	}
 	sols[1] = sol;
 
-	if ((sols[1]->obj1 < sols[0]->obj1) && (sols[1]->obj2 > sols[0]->obj2)) {
+	if ((sols[1]->p1 < sols[0]->p1) && (sols[1]->p2 > sols[0]->p2)) {
 		glpkDichotomieSupportees(prob, glpProb, &sols, nMax, nSol, sols[1], sols[0]);
 	}
 
@@ -114,7 +114,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	do {
 		changement = false;
 		for (int i = 1; i < *nSol; ++i) {
-			if (sols[i-1]->obj2 < sols[i]->obj2) {
+			if (sols[i-1]->p2 < sols[i]->p2) {
 				sol = sols[i];
 				sols[i] = sols[i-1];
 				sols[i-1] = sol;
@@ -129,8 +129,8 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 
 void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, int *nMax, int *nSol, Solution *sol1, Solution *sol2) {
 	int lambda1, lambda2;
-	lambda1 = sol1->obj2 - sol2->obj2;
-	lambda2 = sol2->obj1 - sol1->obj1;
+	lambda1 = sol1->p2 - sol2->p2;
+	lambda2 = sol2->p1 - sol1->p1;
 
 	for (int i = 0; i < prob->n; ++i) {
 		glp_set_obj_coef(glpProb, i+1, lambda1*prob->profits1[i] + lambda2*prob->profits2[i]);
@@ -144,15 +144,15 @@ void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sol
 	}
 	Solution *nouvelleSol = (Solution *) malloc(sizeof(Solution));
 	nouvelleSol->var = (bool *) malloc(prob->n*sizeof(bool));
-	nouvelleSol->obj1 = 0;
-	nouvelleSol->obj2 = 0;
+	nouvelleSol->p1 = 0;
+	nouvelleSol->p2 = 0;
 	nouvelleSol->w1 = 0;
 	nouvelleSol->w2 = 0;
 	for (int i = 0; i < prob->n; ++i) {
 		if (glp_mip_col_val(glpProb, i+1) > 0.1) {
 			nouvelleSol->var[i] = true;
-			nouvelleSol->obj1 = nouvelleSol->obj1 + prob->profits1[i];
-			nouvelleSol->obj2 = nouvelleSol->obj2 + prob->profits2[i];
+			nouvelleSol->p1 = nouvelleSol->p1 + prob->profits1[i];
+			nouvelleSol->p2 = nouvelleSol->p2 + prob->profits2[i];
 			nouvelleSol->w1 = nouvelleSol->w1 + prob->weights1[i];
 			nouvelleSol->w2 = nouvelleSol->w2 + prob->weights2[i];
 		} else {
@@ -160,7 +160,7 @@ void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sol
 		}
 	}
 
-	if ((lambda1*nouvelleSol->obj1 + lambda2*nouvelleSol->obj2) > (lambda1*sol1->obj1 + lambda2*sol1->obj2)) {
+	if ((lambda1*nouvelleSol->p1 + lambda2*nouvelleSol->p2) > (lambda1*sol1->p1 + lambda2*sol1->p2)) {
 		(*sols)[*nSol] = nouvelleSol;
 		*nSol = *nSol + 1;
 		glpkDichotomieSupportees(prob, glpProb, sols, nMax, nSol, sol1, nouvelleSol);
