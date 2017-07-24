@@ -34,7 +34,7 @@ struct Solution {
 	int p2;
 	int w1;
 	int w2;
-	bool *var;						// vrai si l'objet i est dans la solution, faux sinon
+	bool *var;				// vrai si l'objet i est dans la solution, faux sinon
 };
 
 // Ajoute une solution à la liste des solutions efficaces
@@ -46,6 +46,7 @@ void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSo
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol);
+void fixer01(Probleme *p, int y1, int y2);
+Solution *copierSolution(Solution *sol, int n);
 
 #endif

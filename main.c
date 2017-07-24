@@ -94,6 +94,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	Solution **solSup; 			// solutions supportées
 	Solution **solutionsLB; 	// solutions trouvées dans le triangle pour la borne
 	Solution **resultat;		// solutions efficaces trouvées
+	Solution **solAdm;
 
 
 	*nbSol = 0;
@@ -103,6 +104,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	resultat = (Solution **) malloc(nbSolMax*sizeof(Solution *));
 	solutionsLB = (Solution **) malloc(nbSolLBMax*sizeof(Solution *));
 	solSup = glpkSolutionsSupportees(p, &nbSup, &nbMaxSup);
+
 
 	//plotSup(solSup, nbSup);
 
@@ -118,25 +120,57 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
 	}
 
-	Solution **solAdm;
-	int nbSolAdm;
 	for (int i = 1; i < nbSup; ++i) {
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
+
+
+
+
 		if ((solSup1->p1 < solSup2->p1 -1) && (solSup1->p2 > solSup2->p2 + 1)) {
 			nbSolLB = 0;
-
 			lambda1 = solSup1->p2 - solSup2->p2;
 			lambda2 = solSup2->p1 - solSup1->p1;
-
 			p->lambda1 = lambda1;
 			p->lambda2 = lambda2;
 
-			LB = lambda1*(solSup1->p1+1) + lambda2*(solSup2->p2+1);
+			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
+			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
+
+			LB = meilleureBorne(solutionsLB, nbSolLB, p);
 			p->LB = LB;
-			solAdm = fixer01(p, solSup1->p1, solSup2->p2, &nbSolAdm);
+
+
+
+
+
+			int nbSolAdm;
+			p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
+			p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;
+			solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
+
+			LB = meilleureBorne(solutionsLB, nbSolLB, p);
+			printf("LB 1 = %d\n", LB);
+
+			printf("sup1=(%d,%d)\n",solSup[i-1]->p1, solSup[i-1]->p2);
+			printf("sup2=(%d,%d)\n",solSup[i]->p1, solSup[i]->p2);
+
+			for (int i = 0; i < nbSolAdm; ++i) {
+				ajouterSolutionLB(&solutionsLB, solAdm[i], &nbSolLB, &nbSolLBMax);
+				printf("solA=(%d,%d)\n", solAdm[i]->p1, solAdm[i]->p2);
+			}
+
+			
+			LB = meilleureBorne(solutionsLB, nbSolLB, p);
+			printf("LB 2 = %d\n\n", LB);
+			p->LB = LB;
+
+
+
+			fixer01(p, solSup1->p1, solSup2->p2);
 
 			if (p->nBis > 0) {
+				nbSolLB = 2;
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
 				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
 				Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
@@ -144,9 +178,6 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 				for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
 					TAS_ajouter(tas, chemins[j]);
 				}
-
-				ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
-				ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
 
 				while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
 					Chemin *chem = TAS_maximum(tas);
@@ -165,16 +196,13 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 				}
 
 				desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+
+				/*for (int j = 0; j < nbSolAdm; ++j) {
+					if (estEfficace(resultat, nbSolAdm, solAdm[j])) {
+						ajouterSolution(&resultat, solAdm[j], nbSol, &nbSolMax);
+					}
+				}*/
 			}
-			//printf("COCO 1\n");
-			for (int j = 0; j < nbSolAdm; ++j) {
-				//printf("COCO\n");
-				//printf("(%d,%d)\n", solAdm[j]->p1, solAdm[j]->p2);
-				if (estEfficace(resultat, *nbSol, solAdm[j])) {
-					ajouterSolution(&resultat, solAdm[j], nbSol, &nbSolMax);
-				}
-			}
-			//printf("COCO 2\n");
 		}
 	}
 

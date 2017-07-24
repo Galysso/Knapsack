@@ -226,18 +226,12 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol) {
-	Solution **solAdmissibles;
-	*nbSol = 0;
-	int nbSolMax = p->n;
-	solAdmissibles = (Solution **) malloc(nbSolMax*sizeof(Solution *));
-
+void fixer01(Probleme *p, int y1, int y2) {
 	int nbNull = 0;
 	solution *s1, *s2;
 	int ret;
 	donnees d;
 	int LB = p->LB;
-	int newLB;
 	int nb0;
 
 	d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
@@ -281,7 +275,6 @@ Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol) {
 		if (s1 == NULL) {
 			++nbNull;
 			Solution *sol = malloc(sizeof(Solution *));
-			//ajouterSolution(&resultat, solSup[1], nbSol, &nbSolMax);
 			sol->p1 = p->profits1[indI];
 			sol->p2 = p->profits2[indI];
 			sol->w1 = p->weights1[indI];
@@ -303,20 +296,6 @@ Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol) {
 					sol->w1 += p->weights1[indJ];
 					sol->w2 += p->weights2[indJ];
 				}
-			}
-			if (estEfficace(solAdmissibles, *nbSol, sol)) {
-				for (int j = 0; j < *nbSol; ++j) {
-					if ((solAdmissibles[j]->p1 < sol->p1) && (solAdmissibles[j]->p2 < sol->p2)) {
-						solAdmissibles[j] = solAdmissibles[*nbSol-1];
-						--(*nbSol);
-						--j;
-					}
-				}
-				ajouterSolutionLB(&solAdmissibles, sol, nbSol, &nbSolMax);
-			}
-			newLB = meilleureBorne(solAdmissibles, *nbSol, p);
-			if (newLB > LB) {
-				LB = newLB;
 			}
 		}
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
@@ -421,7 +400,19 @@ Solution **fixer01(Probleme *p, int y1, int y2, int *nbSol) {
 	free(d.w2);
 	printf("nb0=%d\n", nb0);
 	printf("nbNull=%d\n", nbNull);
-	
-	return solAdmissibles;
 	// J'adore qu'un plan se déroule sans accroc!
+}
+
+Solution *copierSolution(Solution *sol, int n) {
+	Solution *copie = (Solution *) malloc(sizeof(Solution));
+	copie->var = (bool *) malloc(n*sizeof(bool));
+	for (int i = 0; i < n; ++i) {
+		copie->var[i] = sol->var[i];
+	}
+	copie->p1 = sol->p1;
+	copie->p2 = sol->p2;
+	copie->w1 = sol->w1;
+	copie->w2 = sol->w2;
+
+	return copie;
 }
