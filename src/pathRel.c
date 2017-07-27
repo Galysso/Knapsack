@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+/*Solution **completions(Probleme *p, Solution *incomplete, int *nbComp) {
+	Solution *resultat = (Solution *) malloc(p->n*sizeof(Solution));
+}*/
+
 Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, int *nbSol) {
 	/*for (int j = 0; j < p->n; ++j) {
 		printf("%d", initSol->var[j]);
@@ -20,6 +24,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 
 	*nbSol = 0;
 	int n = p->n;
+	int nbSolMax = 2*n;
 	Solution **solAdm = (Solution **) malloc(n*sizeof(Solution *));
 	int hd = 0;
 	// On calcule la distance de hamming entre les solutions du path relinking
@@ -37,6 +42,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 		int bestI;
 		int delta;
 		int i = 0;
+		Solution **completions;
 
 		// On cherche l'indice du premier objet qui diffère la solution courante avec la solution d'arrivée
 		// On cherche tant que l'objet i est dans le même état pour les deux solutions ou qu'il est absent dans la solution courante et qu'il ne peut pas être ajouté
@@ -84,7 +90,9 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			X->w2 += p->weights2[bestI];
 		}
 
+		// Si X est dans le triangle est n'est pas dominée par des solutions déjà trouvées
 		if ((X->p1 > initSol->p1) && (X->p2 > guidingSol->p2) && (estEfficace(solAdm, *nbSol, X))) {
+			// On supprime les solutions déjà trouvées et dominées par X
 			for (int j = 0; j < *nbSol; ++j) {
 				if ((X->p1 > solAdm[j]->p1) && (X->p2 > solAdm[j]->p2)) {
 					*nbSol = *nbSol - 1;
@@ -92,8 +100,33 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 					--j;
 				}
 			}
+			// On ajoute X à la liste des solutions pour LB
 			solAdm[*nbSol] = copierSolution(X, n);
 			*nbSol = *nbSol + 1;
+		}
+
+		// On crée les completions si un objet a été retiré
+		if (!X->var[bestI]) {
+			for (i = 0; i < p->n; ++i) {
+				// Si l'objet n'est pas présent dans la solution
+				if ((!X->var[i])
+				// Et si l'objet entre dans le sac à dos
+				&& (X->w1 + p->weights1[i] <= p->omega1) && (X->w2 + p->weights2[i] <= p->omega2)
+				// Et si l'objet est dans le triangle
+				&& (X->p1 + p->profits1[i] >= initSol->p1) && (X->p2 + p->profits2[i] >= guidingSol->p2)) {
+					// ALors on créé la solution
+					Solution *Xc = copierSolution(X, n);
+					Xc->p1 += p->profits1[i];
+					Xc->p2 += p->profits2[i];
+					Xc->w1 += p->weights1[i];
+					Xc->w2 += p->weights2[i];
+					if (estEfficace(solAdm, *nbSol, Xc)) {
+						ajouterSolutionDom(&solAdm, )
+						solAdm[*nbSol] = Xc;
+						*nbSol = *nbSol + 1;
+					}
+				}
+			}
 		}
 
 		--hd;

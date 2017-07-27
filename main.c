@@ -150,6 +150,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
 
 			LB = meilleureBorne(solutionsLB, nbSolLB, p);
+
 			printf("LB 1 = %d\n", LB);
 
 			printf("sup1=(%d,%d)\n",solSup[i-1]->p1, solSup[i-1]->p2);
@@ -167,10 +168,10 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 
 
 
-			fixer01(p, solSup1->p1, solSup2->p2);
+			/*fixer01(p, solSup1->p1, solSup2->p2);
 
 			if (p->nBis > 0) {
-				nbSolLB = 2;
+				//nbSolLB = 2;
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
 				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
 				Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
@@ -195,14 +196,14 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 					genererSolutions(chem, tas, p);
 				}
 
-				desallouerGraphe(nNoeuds, graphe, p->nBis+1);
+				desallouerGraphe(nNoeuds, graphe, p->nBis+1);*/
 
 				/*for (int j = 0; j < nbSolAdm; ++j) {
 					if (estEfficace(resultat, nbSolAdm, solAdm[j])) {
 						ajouterSolution(&resultat, solAdm[j], nbSol, &nbSolMax);
 					}
 				}*/
-			}
+			//}
 		}
 	}
 
@@ -237,16 +238,13 @@ int main() {
 		}
 	} while (changement);
 
-	printf("%d solutions:\n", nbSol);
+	/*printf("%d solutions:\n", nbSol);
 	for (int i = 0; i < nbSol; ++i) {
 	printf("(%d, %d):", nonDominated[i]->p1, nonDominated[i]->p2);
-		/*for (int j = 0; j < p->n; ++j) {
-			printf("%d", nonDominated[i]->var[j]);
-		}*/
 		printf("\n");
 	}
 	printf("%d solutions:\n", nbSol);
-	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
+	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);*/
 
 	printf("COCO\n");
 

@@ -43,6 +43,7 @@ struct Solution {
 int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p);
 bool estEfficace(Solution **solutions, int fin, Solution *sol);
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
+void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);

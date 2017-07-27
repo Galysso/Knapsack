@@ -47,6 +47,22 @@ void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSo
 	*nbSol = *nbSol + 1;
 }
 
+void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
+	for (int j = 0; j < *nbSol; ++j) {
+		if ((sol->p1 > solutions[j]->p1) && (sol->p2 > solutions[j]->p2)) {
+			*nbSol = *nbSol - 1;
+			solutions[j] = solutions[*nbSol];
+			--j;
+		}
+	}
+	if (*nbSol == *nbSolMax) {
+		*nbSolMax = (*nbSolMax)*(*nbSolMax);
+		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+	}
+	(*solutions)[*nbSol] = sol;
+	*nbSol = *nbSol + 1;
+}
+
 Probleme *genererProbleme(char *nomFichier) {
 	Probleme *p = (Probleme *) malloc(sizeof(Probleme));
 
