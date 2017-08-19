@@ -147,6 +147,9 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			int nbSolAdm;
 			p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
 			p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;
+
+			trierIndvar(p);
+
 			solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
 
 			LB = meilleureBorne(solutionsLB, nbSolLB, p);
@@ -196,7 +199,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 					genererSolutions(chem, tas, p);
 				}
 
-				desallouerGraphe(nNoeuds, graphe, p->nBis+1);*/
+				desallouerGraphe(nNoeuds, graphe, p->nBis+1);
 
 				/*for (int j = 0; j < nbSolAdm; ++j) {
 					if (estEfficace(resultat, nbSolAdm, solAdm[j])) {
@@ -242,9 +245,9 @@ int main() {
 	for (int i = 0; i < nbSol; ++i) {
 	printf("(%d, %d):", nonDominated[i]->p1, nonDominated[i]->p2);
 		printf("\n");
-	}
+	}*/
 	printf("%d solutions:\n", nbSol);
-	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);*/
+	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
 
 	printf("COCO\n");
 

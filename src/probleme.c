@@ -49,9 +49,9 @@ void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSo
 
 void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
 	for (int j = 0; j < *nbSol; ++j) {
-		if ((sol->p1 > solutions[j]->p1) && (sol->p2 > solutions[j]->p2)) {
+		if ((sol->p1 > (*solutions)[j]->p1) && (sol->p2 > (*solutions)[j]->p2)) {
 			*nbSol = *nbSol - 1;
-			solutions[j] = solutions[*nbSol];
+			(*solutions)[j] = (*solutions)[*nbSol];
 			--j;
 		}
 	}
@@ -61,6 +61,44 @@ void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *n
 	}
 	(*solutions)[*nbSol] = sol;
 	*nbSol = *nbSol + 1;
+}
+
+bool estComplete(Solution *solution, Probleme *p) {
+	bool complete = true;
+	int n = p->n;
+	int i = 0;
+	int omega1 = p->omega1;
+	int omega2 = p->omega2;
+	int w1 = solution->w1;
+	int w2 = solution->w2;
+
+	do {
+		complete = ((solution->var[i]) || (w1 + p->weights1[i] > omega1) || (w2 + p->weights2[i] > omega2));
+		++i;
+	} while (complete && (i < n));
+
+	return complete;
+}
+
+void trierIndvar(Probleme *p) {
+	bool changement;
+	int nBis = p->nBis;
+	int lambda1 = p->lambda1;
+	int lambda2 = p->lambda2;
+	int indJ1, indJ2;
+
+	do {
+		changement = false;
+		for (int i = 1; i < nBis; ++i) {
+			indJ1 = p->indVar[i-1];
+			indJ2 = p->indVar[i];
+			if (lambda1*p->profits1[indJ1] + lambda2*p->profits2[indJ1] < lambda1*p->profits1[indJ2] + lambda2*p->profits2[indJ2]) {
+				p->indVar[i-1] = indJ2;
+				p->indVar[i] = indJ1;
+				changement = true;
+			}
+		}
+	} while(changement);
 }
 
 Probleme *genererProbleme(char *nomFichier) {
@@ -110,6 +148,14 @@ Probleme *genererProbleme(char *nomFichier) {
 
 		p->pCumul1 = (int *) malloc((1+nbVariable)*sizeof(int));
 		p->pCumul2 = (int *) malloc((1+nbVariable)*sizeof(int));
+
+		p->pCumul1[nbVariable] = 0;
+		p->pCumul2[nbVariable] = 0;
+		for (int j = nbVariable-1; j >= 0; --j) {
+			int indJ = indVar[j];
+			p->pCumul1[j] = p->pCumul1[j+1] + profits1[indJ];
+			p->pCumul2[j] = p->pCumul2[j+1] + profits2[indJ];
+		}
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -416,6 +462,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 	free(d.w2);
 	printf("nb0=%d\n", nb0);
 	printf("nbNull=%d\n", nbNull);
+
 	// J'adore qu'un plan se déroule sans accroc!
 }
 

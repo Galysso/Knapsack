@@ -27,6 +27,8 @@ struct Probleme {
 
 	int *pCumul1;
 	int *pCumul2;
+
+	int *sortedInd;
 };
 
 struct Solution {
@@ -44,6 +46,8 @@ int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p);
 bool estEfficace(Solution **solutions, int fin, Solution *sol);
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
+bool estComplete(Solution *solution, Probleme *p);
+void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);

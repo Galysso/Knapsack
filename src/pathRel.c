@@ -51,14 +51,12 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 		}
 		bestI = i;
 		if (X->var[i]) {
-			//printf("1 i=%d\n", i);
 			delta = -p->lambda1*p->profits1[i] - p->lambda2*p->profits2[i];
-			//printf("delta debut = %d\n", p->profits1[i]);
 		} else {
-			//printf("2 i=%d\n", i);
 			delta = p->lambda1*p->profits1[i] + p->lambda2*p->profits2[i];
 		}
 
+		// On cherche le plus grand delta que l'on puisse avoir
 		for (i = i+1; i < n; ++i) {
 			if (X->var[i] != guidingSol->var[i]) {
 				if (X->var[i]) {
@@ -75,7 +73,6 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			}
 		}
 
-		//printf("bestDelta=%d\n", delta);
 		if (X->var[bestI]) {
 			X->var[bestI] = false;
 			X->p1 -= p->profits1[bestI];
@@ -101,8 +98,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 				}
 			}
 			// On ajoute X à la liste des solutions pour LB
-			solAdm[*nbSol] = copierSolution(X, n);
-			*nbSol = *nbSol + 1;
+			ajouterSolutionDom(&solAdm, X, nbSol, &nbSolMax);
 		}
 
 		// On crée les completions si un objet a été retiré
@@ -121,17 +117,56 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 					Xc->w1 += p->weights1[i];
 					Xc->w2 += p->weights2[i];
 					if (estEfficace(solAdm, *nbSol, Xc)) {
-						ajouterSolutionDom(&solAdm, )
-						solAdm[*nbSol] = Xc;
-						*nbSol = *nbSol + 1;
+						ajouterSolutionDom(&solAdm, Xc, nbSol, &nbSolMax);
 					}
 				}
 			}
+		// Si l'objet a été ajouté et que la solution est complète
+		} else if (estComplete(X, p)) {
+			// Alors on effectue une oscillation d'une profondeur de 2
+			// Pour cela on trouve d'abord les deux meilleurs objets à ajouter
+			Solution *Xc = copierSolution(X, n);
+
+			int bestJ1 = -1;
+			int bestJ2 = -1;
+			int delta1 = 0;
+			int delta2 = 0;
+			int delta = 0;
+			for (int j = 0; j < n; ++j) {
+				delta = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
+				if (!Xc->var[j]) {
+					if (delta > delta1) {
+						delta2 = delta1;
+						delta1 = delta;
+						bestJ2 = bestJ1;
+						bestJ1 = j;
+					} else if (delta > delta2) {
+						delta2 = delta;
+						bestJ2 = j;
+					}
+				}
+			}
+			// On ajoute les objets trouvés (en testant s'il y en a pour la généralité)
+			if (bestJ1 >= 0) {
+				Xc->var[bestJ1] = true;
+				Xc->w1 += p->weights1[bestJ1];
+				Xc->w2 += p->weights2[bestJ1];
+				Xc->p1 += p->profits1[bestJ1];
+				Xc->p2 += p->profits2[bestJ1];
+			}
+			if (bestJ2 >= 0) {
+				Xc->var[bestJ2] = true;
+				Xc->w1 += p->weights1[bestJ2];
+				Xc->w2 += p->weights2[bestJ2];
+				Xc->p1 += p->profits1[bestJ2];
+				Xc->p2 += p->profits2[bestJ2];
+			}
+
+			// On teste toutes les suppressions possibles
+			
 		}
 
 		--hd;
-
-		//printf("\n\n");
 	}
 
 	// on trie les solutions
