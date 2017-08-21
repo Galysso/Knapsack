@@ -47,6 +47,7 @@ bool estEfficace(Solution **solutions, int fin, Solution *sol);
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 bool estComplete(Solution *solution, Probleme *p);
+// Tri les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
 void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);

@@ -129,23 +129,21 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 
 			int bestJ1 = -1;
 			int bestJ2 = -1;
-			int delta1 = 0;
-			int delta2 = 0;
-			int delta = 0;
-			for (int j = 0; j < n; ++j) {
-				delta = p->lambda1*p->profits1[j] + p->lambda2*p->profits2[j];
-				if (!Xc->var[j]) {
-					if (delta > delta1) {
-						delta2 = delta1;
-						delta1 = delta;
-						bestJ2 = bestJ1;
-						bestJ1 = j;
-					} else if (delta > delta2) {
-						delta2 = delta;
-						bestJ2 = j;
+			int indV;
+			int j = 0;
+
+			while ((j < n) && (bestJ2 == -1)) {
+				indV = p->indVar[j];
+				if (!Xc->var[indV]) {
+					if (bestJ1 == -1) {
+						bestJ1 = indV;
+					} else {
+						bestJ2 = indV;
 					}
 				}
+				++j;
 			}
+
 			// On ajoute les objets trouvés (en testant s'il y en a pour la généralité)
 			if (bestJ1 >= 0) {
 				Xc->var[bestJ1] = true;
@@ -163,11 +161,69 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			}
 
 			// On teste toutes les suppressions possibles
+			// indice du niveau supérieur de l'arbre de recherche
+			int *lastI = malloc(n*sizeof(int));
+			// pronfondeur courante
+			int profondeur = 0;
+			int ind = 0;
+			indV = p->indVar[n-ind-1];
+			int sum = 0;
+			//lastI[0] = ind;
+
+			while ((profondeur != -1) && (sum < 50)) {
+				if (ind == n) {
+					--profondeur;
+					if (profondeur >= 0) {
+						ind = lastI[profondeur];
+						indV = p->indVar[n-ind-1];
+						Xc->var[indV] = true;
+						Xc->w1 += p->weights1[indV];
+						Xc->w2 += p->weights2[indV];
+						Xc->p1 += p->profits1[indV];
+						Xc->p2 += p->profits2[indV];
+						++ind;
+					}
+				} else if (Xc->var[ind]) {
+					// on retire l'objet
+					indV = p->indVar[n-ind-1];
+					Xc->var[indV] = false;
+					Xc->w1 -= p->weights1[indV];
+					Xc->w2 -= p->weights2[indV];
+					Xc->p1 -= p->profits1[indV];
+					Xc->p2 -= p->profits2[indV];
+					// Si la solution est admissible
+					if ((Xc->w1 <= p->omega1) && (Xc->w2 <= p->omega2)) {
+						// Si la solution est efficace alors on l'ajoute
+						++sum;
+						if (estEfficace(solAdm, *nbSol, Xc)) {
+							Solution *Xc2 = copierSolution(Xc, n);
+							ajouterSolutionDom(&solAdm, Xc, nbSol, &nbSolMax);
+						}
+
+						// Puis on retire l'objet pour continuer sur la même profondeur
+						Xc->var[indV] = true;
+						Xc->w1 += p->weights1[indV];
+						Xc->w2 += p->weights2[indV];
+						Xc->p1 += p->profits1[indV];
+						Xc->p2 += p->profits2[indV];
+						++ind;
+					} else {
+						lastI[profondeur] = ind;
+						++profondeur;
+						ind = 0;
+					}
+				} else {
+					++ind;
+				}
+			}
 			
+			free(lastI);
 		}
 
 		--hd;
 	}
+
+	printf("nbSol = %d\n", *nbSol);
 
 	// on trie les solutions
 	bool changement;

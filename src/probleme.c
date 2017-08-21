@@ -82,14 +82,14 @@ bool estComplete(Solution *solution, Probleme *p) {
 
 void trierIndvar(Probleme *p) {
 	bool changement;
-	int nBis = p->nBis;
+	int n = p->n;
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
 	int indJ1, indJ2;
 
 	do {
 		changement = false;
-		for (int i = 1; i < nBis; ++i) {
+		for (int i = 1; i < n; ++i) {
 			indJ1 = p->indVar[i-1];
 			indJ2 = p->indVar[i];
 			if (lambda1*p->profits1[indJ1] + lambda2*p->profits2[indJ1] < lambda1*p->profits1[indJ2] + lambda2*p->profits2[indJ2]) {
@@ -236,10 +236,13 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	int w1 = 0;
 	int w2 = 0;
 
+	// On initialise la solution avec aucun objet
 	for (int i = 0; i < p->n; ++i) {
 		var[i] = false;
 	}
 
+	// On note les objets qui sont dans la solution en parcourant le chemin
+	// On rappelle que les objets dont les indices ne sont pas dans indVar ont été retirés définitivement pour le triangle
 	if (chemin->nDeviation > 0) {
 		int nDev = chemin->nDeviation;
 		int *deviations = (int *) malloc(nDev*sizeof(int));
