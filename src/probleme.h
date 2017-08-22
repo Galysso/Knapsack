@@ -21,6 +21,9 @@ struct Probleme {
 	int *weights1;			// poids des variables dans la fonction objectif
 	int *weights2;
 	int *indVar;
+
+	Solution *solSup1;
+	Solution *solSup2;
 	int lambda1;
 	int lambda2;
 	int LB;
@@ -47,7 +50,9 @@ bool estEfficace(Solution **solutions, int fin, Solution *sol);
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 bool estComplete(Solution *solution, Probleme *p);
-// Tri les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
+void completerGlouton(Solution *sol, Probleme *p);
+Solution **completions(Solution *sol, Probleme *p, int *nSol);
+// Trie les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
 void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);

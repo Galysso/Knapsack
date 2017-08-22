@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup);
+void plotSup(Solution **solSup, int nbSolSup);
+
 void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup) {
     FILE *plotNonDom = fopen("nonDominated.dat", "w");
     FILE *plotSolSup = fopen("solSupportees.dat", "w");
@@ -120,6 +123,10 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
 	}
 
+	Solution **solPathR = (Solution **) malloc(p->n*p->n*sizeof(Solution*));
+	int nbSolPath = 0;
+	int nbSolPathMax = p->n*p->n;
+
 	for (int i = 1; i < nbSup; ++i) {
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
@@ -133,6 +140,8 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			lambda2 = solSup2->p1 - solSup1->p1;
 			p->lambda1 = lambda1;
 			p->lambda2 = lambda2;
+			p->solSup1 = solSup1;
+			p->solSup2 = solSup2;
 
 			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
 			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
@@ -145,28 +154,32 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 
 
 			int nbSolAdm;
-			p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
-			p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;
+			/*p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
+			p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;*/
 
 			trierIndvar(p);
 
 			solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
 
+			for (int k = 0; k < nbSolAdm; ++k) {
+				ajouterSolution(&solPathR, solAdm[k], &nbSolPath, &nbSolPathMax);
+			}
+
 			LB = meilleureBorne(solutionsLB, nbSolLB, p);
 
-			printf("LB 1 = %d\n", LB);
+			/*printf("LB 1 = %d\n", LB);
 
 			printf("sup1=(%d,%d)\n",solSup[i-1]->p1, solSup[i-1]->p2);
 			printf("sup2=(%d,%d)\n",solSup[i]->p1, solSup[i]->p2);
-
+*/
 			for (int i = 0; i < nbSolAdm; ++i) {
 				ajouterSolutionLB(&solutionsLB, solAdm[i], &nbSolLB, &nbSolLBMax);
-				printf("solA=(%d,%d)\n", solAdm[i]->p1, solAdm[i]->p2);
+				//printf("solA=(%d,%d)\n", solAdm[i]->p1, solAdm[i]->p2);
 			}
 
 			
 			LB = meilleureBorne(solutionsLB, nbSolLB, p);
-			printf("LB 2 = %d\n\n", LB);
+			//printf("LB 2 = %d\n\n", LB);
 			p->LB = LB;
 
 
@@ -210,6 +223,10 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		}
 	}
 
+	printf("COCO\n");
+	plotAll(solPathR, nbSolPath, solSup, nbSup);
+
+
 	//plotAll(resultat, *nbSol, solSup, nbSup);
 
 	return resultat;
@@ -219,7 +236,7 @@ int main() {
 	clock_t debut, fin;
 
 	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("A1.DAT");
+	//Probleme *p = genererProbleme("ZTL105.DAT");
 	int nbSol;
 
 	debut = clock();

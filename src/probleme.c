@@ -80,6 +80,73 @@ bool estComplete(Solution *solution, Probleme *p) {
 	return complete;
 }
 
+void completerGlouton(Solution *sol, Probleme *p) {
+	int n = p->n;
+	int omega1 = p->omega1;
+	int omega2 = p->omega2;
+	int w1 = sol->w1;
+	int w2 = sol->w2;
+	int indV;
+
+	for (int i = 0; i < n; ++i) {
+		indV = p->indVar[i];
+		if ((!sol->var[indV]) && (w1 + p->weights1[indV] <= omega1) && (w2 + p->weights2[indV] <= omega2)) {
+			w1 += p->weights1[indV];
+			w2 += p->weights2[indV];
+			sol->p1 += p->profits1[indV];
+			sol->p2 += p->profits2[indV];
+			sol->var[indV] = true;
+		}
+		sol->w1 = w1;
+		sol->w2 = w2;
+	}
+}
+
+Solution **completions(Solution *sol, Probleme *p, int *nSol) {
+	int n = p->n;
+	int maxSol = n;
+	*nSol = 0;
+	Solution *resultat = (Solution *) malloc(maxSol*sizeof(Solution));
+	int profondeur = 0;
+	int i = 0;
+	int *lastI = (int *) malloc(n*sizeof(int));
+
+	Solution *solC = copierSolution(sol, n);
+	while (profondeur >= 0) {
+		if (i == n) {
+			if (estEfficace(resultat, *nSol, solC)) {
+				//assert(estComplete(solC, p));
+				ajouterSolutionDom(&resultat, solC, nSol, &maxSol);
+			}
+			--profondeur;
+			if (profondeur >= 0) {
+				i = lastI[profondeur];
+				solC->var[i] = false;
+				solC->w1 -= p->weights1[i];
+				solC->w2 -= p->weights2[i];
+				solC->p1 -= p->profits1[i];
+				solC->p2 -= p->profits2[i];
+				++i;
+			}
+		} else if (!solC->var[i]) {
+			if ((solC->w1 + p->weights1[i] <= p->omega1) && (solC->w2 + p->weights2[i] < p->omega2)) {
+				solC->var[i] = true;
+				solC->w1 += p->weights1[i];
+				solC->w2 += p->weights2[i];
+				solC->p1 += p->profits1[i];
+				solC->p2 += p->profits2[i];
+				lastI[profondeur] = i;
+				++profondeur;
+			}
+			++i;
+		} else {
+			++i;
+		}
+	}
+
+	return resultat;
+}
+
 void trierIndvar(Probleme *p) {
 	bool changement;
 	int n = p->n;
