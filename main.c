@@ -127,12 +127,18 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	int nbSolPath = 0;
 	int nbSolPathMax = p->n*p->n;
 
+	// On réalise des paths relinking entre les solutions supportées
+	for (int i = 1; i < nbSup; ++i) {
+		solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
+	}
+
+	// Une liste de solutions par triangle
+	Solution ***solutionsPR = (Solution **) malloc(nbSup*sizeof(Solution **));
+	int *nbSolPR = (int *) malloc(nbSup*sizeof(int));
+
 	for (int i = 1; i < nbSup; ++i) {
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
-
-
-
 
 		if ((solSup1->p1 < solSup2->p1 -1) && (solSup1->p2 > solSup2->p2 + 1)) {
 			nbSolLB = 0;
@@ -142,6 +148,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			p->lambda2 = lambda2;
 			p->solSup1 = solSup1;
 			p->solSup2 = solSup2;
+			trierIndvar(p);
 
 			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
 			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
@@ -149,40 +156,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 			LB = meilleureBorne(solutionsLB, nbSolLB, p);
 			p->LB = LB;
 
-
-
-
-
 			int nbSolAdm;
-			/*p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
-			p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;*/
-
-			trierIndvar(p);
-
-			solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
-
-			for (int k = 0; k < nbSolAdm; ++k) {
-				ajouterSolution(&solPathR, solAdm[k], &nbSolPath, &nbSolPathMax);
-			}
-
-			LB = meilleureBorne(solutionsLB, nbSolLB, p);
-
-			/*printf("LB 1 = %d\n", LB);
-
-			printf("sup1=(%d,%d)\n",solSup[i-1]->p1, solSup[i-1]->p2);
-			printf("sup2=(%d,%d)\n",solSup[i]->p1, solSup[i]->p2);
-*/
-			for (int i = 0; i < nbSolAdm; ++i) {
-				ajouterSolutionLB(&solutionsLB, solAdm[i], &nbSolLB, &nbSolLBMax);
-				//printf("solA=(%d,%d)\n", solAdm[i]->p1, solAdm[i]->p2);
-			}
-
-			
-			LB = meilleureBorne(solutionsLB, nbSolLB, p);
-			//printf("LB 2 = %d\n\n", LB);
-			p->LB = LB;
-
-
 
 			/*fixer01(p, solSup1->p1, solSup2->p2);
 
@@ -224,7 +198,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	}
 
 	printf("COCO\n");
-	plotAll(solPathR, nbSolPath, solSup, nbSup);
+	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
 
 	//plotAll(resultat, *nbSol, solSup, nbSup);

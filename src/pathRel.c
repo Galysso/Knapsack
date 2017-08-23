@@ -8,18 +8,6 @@
 #include <assert.h>
 
 Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, int *nbSol) {
-	/*for (int j = 0; j < p->n; ++j) {
-		printf("%d", initSol->var[j]);
-	}
-	printf("\n");
-	for (int j = 0; j < p->n; ++j) {
-		printf("%d", guidingSol->var[j]);
-	}
-	printf("\n");*/
-
-
-
-
 	*nbSol = 0;
 	int n = p->n;
 	int nbSolMax = 2*n;
@@ -31,8 +19,6 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			++hd;
 		}
 	}
-
-	//printf("hd=%d\n", hd);
 
 	Solution *X = copierSolution(initSol, n);
 
@@ -84,42 +70,14 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			X->p2 += p->profits2[bestI];
 			X->w1 += p->weights1[bestI];
 			X->w2 += p->weights2[bestI];
-
-			// Si X est dans le triangle est n'est pas dominée par des solutions déjà trouvées
-			if (/*(X->p1 > initSol->p1) && (X->p2 > guidingSol->p2) && */(estEfficace(solAdm, *nbSol, X))) {
-				Solution *Xc = copierSolution(X, n);
-				ajouterSolutionDom(&solAdm, Xc, nbSol, &nbSolMax);
-			}
 		}
 
 		// On crée les completions si un objet a été retiré
 		if (!X->var[bestI]) {
-			for (i = 0; i < p->n; ++i) {
-				// Si l'objet n'est pas présent dans la solution
-				if ((!X->var[i])
-				// Et si l'objet entre dans le sac à dos
-				&& (X->w1 + p->weights1[i] <= p->omega1) && (X->w2 + p->weights2[i] <= p->omega2)
-				// Et si l'objet est dans le triangle
-				&& (X->p1 + p->profits1[i] >= initSol->p1) && (X->p2 + p->profits2[i] >= guidingSol->p2)) {
-					// ALors on créé la solution
-					Solution *Xc = copierSolution(X, n);
-					Xc->p1 += p->profits1[i];
-					Xc->p2 += p->profits2[i];
-					Xc->w1 += p->weights1[i];
-					Xc->w2 += p->weights2[i];
-					//completerGlouton(Xc, p);
-					//printf("est complet ? %d\n", estComplete(Xc, p));
-					solComp = completions(Xc, p, &nComp);
-					if ((nComp == 0) && (estEfficace(solAdm, *nbSol, Xc))) {
-						ajouterSolutionDom(&solAdm, Xc, nbSol, &nbSolMax);
-					} else {
-						for (int k = 0; k < nComp; ++k) {
-							if (estEfficace(solAdm, *nbSol, solComp[k])) {
-								ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
-							}
-						}
-					}
-				}
+			Solution *Xc = copierSolution(X, n);
+			solComp = completions(Xc, p, &nComp);
+			for (int k = 0; k < nComp; ++k) {
+				ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
 			}
 		// Si l'objet a été ajouté et que la solution est complète
 		} else if (estComplete(X, p)) {
@@ -133,15 +91,6 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			int j = 0;
 			int nDegr = 2;
 
-			/*for (int y = 0; y < p->n; ++y) {
-				printf("%d", X->var[y]);
-			}
-			printf("\n");
-			for (int y = 0; y < p->n; ++y) {
-				printf("%d", X->var[p->indVar[y]]);
-			}
-			printf("\n");*/
-
 			while ((nDegr > 0) && (j < n) && (bestJ2 == -1)) {
 				indV = p->indVar[j];
 				if (!Xc->var[indV]) {
@@ -151,7 +100,6 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 					Xc->w2 += p->weights2[indV];
 					Xc->p1 += p->profits1[indV];
 					Xc->p2 += p->profits2[indV];
-					//printf("ajouté : %d\n", p->lambda1*p->profits1[indV] + p->lambda2*p->profits2[indV]);
 				}
 				++j;
 			}
@@ -174,34 +122,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 
 
 
-			while ((profondeur != -1) && (sum < 500)) {
-
-
-				// -------------------------------------------------------------
-				// TEST --------------------------------------------------------
-				//printf("Xc=(%d,%d)[%d,%d]\n",Xc->p1, Xc->p2, Xc->w1, Xc->w2);
-				sp1 = 0;
-				sp2 = 0;
-				sw1 = 0;
-				sw2 = 0;
-				for (int r = 0; r < p->n; ++r) {
-					if (Xc->var[r] == true) {
-						//printf("r=%d\n", r);
-						sp1 += p->profits1[r];
-						sp2 += p->profits2[r];
-						sw1 += p->weights1[r];
-						sw2 += p->weights2[r];
-					}
-				}
-				//printf("sp1=%d p1=%d\n", sp1, Xc->p1);
-				assert(sp1 == Xc->p1);
-				assert(sp2 == Xc->p2);
-				assert(sw1 == Xc->w1);
-				assert(sw2 == Xc->w2);
-				// TEST --------------------------------------------------------
-				// -------------------------------------------------------------
-
-
+			while ((profondeur != -1) && (sum < 50)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
@@ -217,7 +138,6 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 					}
 				} else if (Xc->var[indV]) {
 					// on retire l'objet
-					//printf("(%d) retiré : %d\n", profondeur, p->lambda1*p->profits1[indV] + p->lambda2*p->profits2[indV]);
 					Xc->var[indV] = false;
 					Xc->w1 -= p->weights1[indV];
 					Xc->w2 -= p->weights2[indV];
@@ -228,19 +148,12 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 						// Si la solution est efficace alors on l'ajoute
 						++sum;
 						Solution *Xc2 = copierSolution(Xc, n);
-						//printf("complete sol 1 ? %d\n", estComplete(Xc2, p));
-						//completerGlouton(Xc2, p);
-						//printf("complete sol 2 ? %d\n", estComplete(Xc2, p));
-						//printf("remplissage : %d\n", Xc2->w1);
-
 						solComp = completions(Xc2, p, &nComp);
-						if ((nComp == 0) && (estEfficace(solAdm, *nbSol, Xc2))) {
+						if (nComp == 0) {
 							ajouterSolutionDom(&solAdm, Xc2, nbSol, &nbSolMax);
 						} else {
 							for (int k = 0; k < nComp; ++k) {
-								if (estEfficace(solAdm, *nbSol, solComp[k])) {
-									ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
-								}
+								ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
 							}
 						}
 

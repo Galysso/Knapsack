@@ -48,7 +48,7 @@ struct Solution {
 int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p);
 bool estEfficace(Solution **solutions, int fin, Solution *sol);
 void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
-void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
+bool ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
 bool estComplete(Solution *solution, Probleme *p);
 void completerGlouton(Solution *sol, Probleme *p);
 Solution **completions(Solution *sol, Probleme *p, int *nSol);

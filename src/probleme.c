@@ -47,20 +47,33 @@ void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSo
 	*nbSol = *nbSol + 1;
 }
 
-void ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
-	for (int j = 0; j < *nbSol; ++j) {
+bool ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
+	int j = 0;
+	bool estDomine = false;
+	Solution *solCourante;
+
+	while ((j < *nbSol) && (!estDomine)) {
+		solCourante = (*solutions)[j];
 		if ((sol->p1 > (*solutions)[j]->p1) && (sol->p2 > (*solutions)[j]->p2)) {
 			*nbSol = *nbSol - 1;
 			(*solutions)[j] = (*solutions)[*nbSol];
-			--j;
+		} else if ((sol->p1 <= (*solutions)[j]->p1) && (sol->p2 <= (*solutions)[j]->p2)) {
+			estDomine = true;
+		} else {
+			++j;
 		}
 	}
-	if (*nbSol == *nbSolMax) {
-		*nbSolMax = (*nbSolMax)*(*nbSolMax);
-		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+
+	if (!estDomine) {
+		if (*nbSol == *nbSolMax) {
+			*nbSolMax = (*nbSolMax)*2;
+			*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+		}
+		(*solutions)[*nbSol] = sol;
+		*nbSol = *nbSol + 1;
 	}
-	(*solutions)[*nbSol] = sol;
-	*nbSol = *nbSol + 1;
+
+	return (!estDomine);
 }
 
 bool estComplete(Solution *solution, Probleme *p) {
@@ -112,15 +125,15 @@ Solution **completions(Solution *sol, Probleme *p, int *nSol) {
 	int *lastI = (int *) malloc(n*sizeof(int));
 
 	Solution *solC = copierSolution(sol, n);
+
 	while (profondeur >= 0) {
 		if (i == n) {
-			if (estEfficace(resultat, *nSol, solC)) {
-				//assert(estComplete(solC, p));
-				ajouterSolutionDom(&resultat, solC, nSol, &maxSol);
-			}
+			Solution *solC2 = copierSolution(solC, n);
+			ajouterSolutionDom(&resultat, solC2, nSol, &maxSol);
 			--profondeur;
 			if (profondeur >= 0) {
 				i = lastI[profondeur];
+				assert(solC->var[i]);
 				solC->var[i] = false;
 				solC->w1 -= p->weights1[i];
 				solC->w2 -= p->weights2[i];
@@ -129,7 +142,7 @@ Solution **completions(Solution *sol, Probleme *p, int *nSol) {
 				++i;
 			}
 		} else if (!solC->var[i]) {
-			if ((solC->w1 + p->weights1[i] <= p->omega1) && (solC->w2 + p->weights2[i] < p->omega2)) {
+			if ((solC->w1 + p->weights1[i] <= p->omega1) && (solC->w2 + p->weights2[i] <= p->omega2)) {
 				solC->var[i] = true;
 				solC->w1 += p->weights1[i];
 				solC->w2 += p->weights2[i];
