@@ -371,13 +371,15 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-void fixer01(Probleme *p, int y1, int y2) {
+void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol) {
 	int nbNull = 0;
 	solution *s1, *s2;
 	int ret;
 	donnees d;
 	int LB = p->LB;
 	int nb0;
+
+	int relP1, relP2;
 
 	d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
 	d.w1 = (itype *) malloc ((p->n) * sizeof(itype));
@@ -477,6 +479,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 				free(s2);
 				s2 = s1;
 			}
+			relP2 = s2->z1;
 
 			if (s2->z1 + p->profits2[indI] < y2) {
 				p->nBis -= 1;
@@ -506,6 +509,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 					free(s2);
 					s2 = s1;
 				}
+				relP1 = s2->z1;
 
 				if (s2->z1 + p->profits1[indI] < y1) {
 					p->nBis -= 1;
@@ -514,7 +518,21 @@ void fixer01(Probleme *p, int y1, int y2) {
 					}
 					++nb0;
 				} else {
-					++i;
+					// On regarde si le point idéal est dominé par un point du path relinking
+					int k = 0;
+					while ((k < nSol) && ((relP1 > solutionsHeur[k]->p1) || (relP2 > solutionsHeur[k]->p2))) {
+						++k;	
+					}
+					if (k < nSol) {
+						printf("suppression par point idéal\n");
+						p->nBis -= 1;
+						for (int j = i; j < p->nBis; ++j) {
+							p->indVar[j] = p->indVar[j+1];
+						}
+						++nb0;
+					} else {
+						++i;
+					}
 				}
 			}
 		}
@@ -544,7 +562,7 @@ void fixer01(Probleme *p, int y1, int y2) {
 	free(d.w1);
 	free(d.w2);
 	printf("nb0=%d\n", nb0);
-	printf("nbNull=%d\n", nbNull);
+	//printf("nbNull=%d\n", nbNull);
 
 	// J'adore qu'un plan se déroule sans accroc!
 }

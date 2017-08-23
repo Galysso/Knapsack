@@ -57,7 +57,7 @@ void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-void fixer01(Probleme *p, int y1, int y2);
+void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol);
 Solution *copierSolution(Solution *sol, int n);
 
 #endif

@@ -58,7 +58,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
 	int LB = lambda1*(sol1->p1+1) + lambda2*(sol2->p2+1);
-
+//printf("COCO\n");
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = 0;
 	nouveau->p1 = 0;
@@ -144,7 +144,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
-		//printf("nb=%d\n",nb);
+		printf("nb=%d\n",nb);
 	}
 
 	return noeuds;

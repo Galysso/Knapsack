@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <assert.h>
+
 void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup);
 void plotSup(Solution **solSup, int nbSolSup);
 
@@ -99,6 +101,8 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	Solution **resultat;		// solutions efficaces trouvées
 	Solution **solAdm;
 
+	int nbSolAdm;
+
 
 	*nbSol = 0;
 	nbSolMax = p->n*p->n;
@@ -123,18 +127,60 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
 	}
 
-	Solution **solPathR = (Solution **) malloc(p->n*p->n*sizeof(Solution*));
+	// On stocke toutes les solution du path relinking
+	Solution **solPathR = (Solution **) malloc(p->n*sizeof(Solution*));
 	int nbSolPath = 0;
-	int nbSolPathMax = p->n*p->n;
+	int nbSolPathMax = p->n;
+
+	// Une liste de solutions par triangle
+	Solution ***solutionsPR = (Solution ***) malloc((nbSup-1)*sizeof(Solution **));
+	int *nbSolPR = (int *) malloc((nbSup-1)*sizeof(int));
+	int *nbSolPRMax = (int *) malloc((nbSup-1)*sizeof(int));
+
+	for (int i = 1; i < nbSup; ++i) {
+		nbSolPRMax[i-1] = p->n;
+		nbSolPR[i-1] = 2;
+		solutionsPR[i-1] = (Solution **) malloc(p->n*sizeof(Solution *));
+		solutionsPR[i-1][0] = solSup[i-1];
+		solutionsPR[i-1][1] = solSup[i];
+	}
 
 	// On réalise des paths relinking entre les solutions supportées
 	for (int i = 1; i < nbSup; ++i) {
 		solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
+		// On ajoute les solutions du triangle dans les bons triangles
+		for (int j = 0; j < nbSolAdm; ++j) {
+			Solution *solPR = solAdm[j];
+			bool trouve = false;
+			int k = 1;
+			while ((k < nbSup) && (!trouve)) {
+				if ((solPR->p1 > solSup[k-1]->p1) && (solPR->p2 > solSup[k]->p2)) {
+					assert((solPR->p2 <= solSup[k-1]->p2) && (solPR->p1 <= solSup[k]->p1));
+					ajouterSolutionDom(&(solutionsPR[k-1]), solPR, &(nbSolPR[k-1]), &(nbSolPRMax[k-1]));
+					trouve = true;
+				} else {
+					++k;
+				}
+			}
+		}
 	}
 
-	// Une liste de solutions par triangle
-	Solution ***solutionsPR = (Solution **) malloc(nbSup*sizeof(Solution **));
-	int *nbSolPR = (int *) malloc(nbSup*sizeof(int));
+	// On trie les solutions du path relinking pour en calculer une borne
+	for (int i = 0; i < nbSup-1; ++i) {
+		bool changement;
+		do {
+			changement = false;
+			for (int j = 1; j < nbSolPR[i]; ++j) {
+				Solution *sol1 = solutionsPR[i][j-1];
+				Solution *sol2 = solutionsPR[i][j];
+				if (sol1->p1 > sol2->p1) {
+					solutionsPR[i][j-1] = sol2;
+					solutionsPR[i][j] = sol1;
+					changement = true;
+				}
+			}
+		} while (changement);
+	}
 
 	for (int i = 1; i < nbSup; ++i) {
 		Solution *solSup1 = solSup[i-1];
@@ -152,16 +198,16 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 
 			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
 			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
+			//nbSolLB = 2;
 
-			LB = meilleureBorne(solutionsLB, nbSolLB, p);
+			LB = meilleureBorne(solutionsPR[i-1], nbSolPR[i-1], p);
 			p->LB = LB;
 
 			int nbSolAdm;
 
-			/*fixer01(p, solSup1->p1, solSup2->p2);
+			fixer01(p, solSup1->p1, solSup2->p2, solutionsPR[i-1], nbSolPR[i-1]);
 
 			if (p->nBis > 0) {
-				//nbSolLB = 2;
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
 				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
 				Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
@@ -193,7 +239,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 						ajouterSolution(&resultat, solAdm[j], nbSol, &nbSolMax);
 					}
 				}*/
-			//}
+			}
 		}
 	}
 
@@ -201,7 +247,7 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
 
-	//plotAll(resultat, *nbSol, solSup, nbSup);
+	plotAll(resultat, *nbSol, solSup, nbSup);
 
 	return resultat;
 }
@@ -210,7 +256,7 @@ int main() {
 	clock_t debut, fin;
 
 	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("ZTL105.DAT");
+	//Probleme *p = genererProbleme("ZTL28.DAT");
 	int nbSol;
 
 	debut = clock();

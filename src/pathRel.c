@@ -77,7 +77,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 			Solution *Xc = copierSolution(X, n);
 			solComp = completions(Xc, p, &nComp);
 			for (int k = 0; k < nComp; ++k) {
-				ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
+				//ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
 			}
 		// Si l'objet a été ajouté et que la solution est complète
 		} else if (estComplete(X, p)) {
@@ -122,7 +122,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 
 
 
-			while ((profondeur != -1) && (sum < 50)) {
+			while ((profondeur != -1) && (sum < 1000)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
