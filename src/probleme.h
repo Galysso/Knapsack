@@ -9,6 +9,7 @@ typedef struct Chemin Chemin;
 
 typedef struct Probleme Probleme;
 typedef struct Solution Solution;
+typedef struct ListeSol ListeSol;
 
 struct Probleme {
 	char *nomFichier;
@@ -42,22 +43,29 @@ struct Solution {
 	bool *var;				// vrai si l'objet i est dans la solution, faux sinon
 };
 
+struct  ListeSol {
+	Solution **solutions;
+	int nbSol;
+	int nbMax;
+};
+
 // Ajoute une solution à la liste des solutions efficaces
 // Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
 // Calcule la borne minimale actuelle
-int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p);
-bool estEfficace(Solution **solutions, int fin, Solution *sol);
-void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
-bool ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax);
+int meilleureBorne(ListeSol *lSolLB, Probleme *p);
+bool estEfficace(ListeSol *lSol, Solution *sol);
+void ajouterSolution(ListeSol *lSol, Solution *sol);
+bool ajouterSolutionDom(ListeSol *lSol, Solution *sol);
 bool estComplete(Solution *solution, Probleme *p);
 void completerGlouton(Solution *sol, Probleme *p);
-Solution **completions(Solution *sol, Probleme *p, int *nSol);
+ListeSol *completions(Solution *sol, Probleme *p);
 // Trie les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
 void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);
-void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol);
+void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur);
 Solution *copierSolution(Solution *sol, int n);
+ListeSol *initListeSol(int nbMax);
 
 #endif

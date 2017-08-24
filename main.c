@@ -57,20 +57,26 @@ void plotSup(Solution **solSup, int nbSolSup) {
 
 // Ajoute la solution à la liste des points définissant les points de Nadir locaux
 // Conserve l'ordre lexicographique des solutions
-void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *nbSolMax) {
+void ajouterSolutionLB(ListeSol *lSolLB, Solution *sol) {
 	int min, ind, max;
-	Solution *solLB;
-	if (*nbSol == *nbSolMax) {
-		*nbSolMax = (*nbSolMax)*(*nbSolMax);
-		*solutionsLB = (Solution **) realloc(*solutionsLB, *nbSolMax*sizeof(Solution *));
+	int nbSol = lSolLB->nbSol;
+	int nbMax = lSolLB->nbMax;
+
+	if (nbSol == nbMax) {
+		nbMax = 2*nbMax;
+		lSolLB->nbMax = nbMax;
+		lSolLB->solutions = (Solution **) realloc(lSolLB->solutions, nbMax*sizeof(Solution *));
 	}
 
+	Solution **solutions = lSolLB->solutions;
+	Solution *solLB;
+
 	min = 0;
-	max = *nbSol;
+	max = nbSol;
 	ind = max/2;
 
 	while (ind != min) {
-		solLB = (*solutionsLB)[ind];
+		solLB = solutions[ind];
 		if (sol->p2 < solLB->p2) {
 			min = ind;
 		} else {
@@ -79,84 +85,79 @@ void ajouterSolutionLB(Solution ***solutionsLB, Solution *sol, int *nbSol, int *
 		ind = (min+max)/2;
 	}
 
-	if ((ind != *nbSol) && ((*solutionsLB)[ind]->p2 > sol->p2)) {
+	if ((ind != nbSol) && (solutions[ind]->p2 > sol->p2)) {
 		++ind;
 	}
 
-	for (int i = *nbSol; i > ind; --i) {
-		(*solutionsLB)[i] = (*solutionsLB)[i-1];
+	for (int i = nbSol; i > ind; --i) {
+		solutions[i] = solutions[i-1];
 	}
-	(*solutionsLB)[ind] = sol;
-	*nbSol = *nbSol + 1;
+	solutions[ind] = sol;
+	lSolLB->nbSol = nbSol+1;
 }
 
 // Fuite de mémoire : les chemins ne sont pas désalloués
-Solution **trouverSolutions(Probleme *p, int *nbSol) {
+ListeSol *trouverSolutions(Probleme *p) {
 	int lambda1, lambda2;		// poids de la somme pondérée
 	int LB, newLB;				// borne inférieure et plus petite borne inférieure actuelle
-	int nbSup, nbMaxSup, nbSolMax, nbSolLB, nbSolLBMax;	// remplissages et tailles allouées des tableaux
+	int nbSup, nbMaxSup;	// remplissages et tailles allouées des tableaux
 	int *nNoeuds;				// nombre de noeuds pour chaque colonne du graphe
 	Solution **solSup; 			// solutions supportées
-	Solution **solutionsLB; 	// solutions trouvées dans le triangle pour la borne
-	Solution **resultat;		// solutions efficaces trouvées
-	Solution **solAdm;
+	ListeSol *lSolLB; 			// solutions trouvées dans le triangle pour la borne
+	ListeSol *resultat;				// solutions efficaces trouvées
 
-	int nbSolAdm;
+	ListeSol *lSolAdm;
 
-
-	*nbSol = 0;
-	nbSolMax = p->n*p->n;
-	nbSolLBMax = p->n;
-
-	resultat = (Solution **) malloc(nbSolMax*sizeof(Solution *));
-	solutionsLB = (Solution **) malloc(nbSolLBMax*sizeof(Solution *));
+	resultat = initListeSol(p->n);
+	lSolLB = initListeSol(p->n);
 	solSup = glpkSolutionsSupportees(p, &nbSup, &nbMaxSup);
 
-
-	//plotSup(solSup, nbSup);
-
-	ajouterSolution(&resultat, solSup[1], nbSol, &nbSolMax);
-	ajouterSolution(&resultat, solSup[nbSup-2], nbSol, &nbSolMax);
-	if (estEfficace(resultat, *nbSol, solSup[0])) {
-		ajouterSolution(&resultat, solSup[0], nbSol, &nbSolMax);
+	// On ajoute à liste des solutions les points supportés (attention aux extremes)
+	ajouterSolution(resultat, solSup[1]);
+	ajouterSolution(resultat, solSup[nbSup-2]);
+	if (estEfficace(resultat, solSup[0])) {
+		ajouterSolution(resultat, solSup[0]);
 	}
-	if (estEfficace(resultat, *nbSol, solSup[nbSup-1])) {
-		ajouterSolution(&resultat, solSup[nbSup-1], nbSol, &nbSolMax);
+	if (estEfficace(resultat, solSup[nbSup-1])) {
+		ajouterSolution(resultat, solSup[nbSup-1]);
 	}
 	for (int i = 2; i < nbSup-2; ++i) {
-		ajouterSolution(&resultat, solSup[i], nbSol, &nbSolMax);
+		ajouterSolution(resultat, solSup[i]);
 	}
 
-	// On stocke toutes les solution du path relinking
-	Solution **solPathR = (Solution **) malloc(p->n*sizeof(Solution*));
-	int nbSolPath = 0;
-	int nbSolPathMax = p->n;
-
 	// Une liste de solutions par triangle
-	Solution ***solutionsPR = (Solution ***) malloc((nbSup-1)*sizeof(Solution **));
-	int *nbSolPR = (int *) malloc((nbSup-1)*sizeof(int));
-	int *nbSolPRMax = (int *) malloc((nbSup-1)*sizeof(int));
+	ListeSol **lSolPR = (ListeSol **) malloc((nbSup-1)*sizeof(ListeSol *));
 
 	for (int i = 1; i < nbSup; ++i) {
-		nbSolPRMax[i-1] = p->n;
-		nbSolPR[i-1] = 2;
-		solutionsPR[i-1] = (Solution **) malloc(p->n*sizeof(Solution *));
-		solutionsPR[i-1][0] = solSup[i-1];
-		solutionsPR[i-1][1] = solSup[i];
+		lSolPR[i-1] = initListeSol(nbSup);
+		ajouterSolutionDom(lSolPR[i-1], solSup[i-1]);
+		ajouterSolutionDom(lSolPR[i-1], solSup[i]);
 	}
 
 	// On réalise des paths relinking entre les solutions supportées
 	for (int i = 1; i < nbSup; ++i) {
-		solAdm = pathRelinking(p, solSup[i-1], solSup[i], &nbSolAdm);
+		p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
+		p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;
+		p->solSup1 = solSup[i-1];
+		p->solSup2 = solSup[i];
+
+		trierIndvar(p);
+
+		lSolAdm = pathRelinking(p, solSup[i-1], solSup[i]);
 		// On ajoute les solutions du triangle dans les bons triangles
-		for (int j = 0; j < nbSolAdm; ++j) {
-			Solution *solPR = solAdm[j];
+		for (int j = 0; j < lSolAdm->nbSol; ++j) {
+			Solution *solPR = lSolAdm->solutions[j];
 			bool trouve = false;
 			int k = 1;
 			while ((k < nbSup) && (!trouve)) {
-				if ((solPR->p1 > solSup[k-1]->p1) && (solPR->p2 > solSup[k]->p2)) {
-					assert((solPR->p2 <= solSup[k-1]->p2) && (solPR->p1 <= solSup[k]->p1));
-					ajouterSolutionDom(&(solutionsPR[k-1]), solPR, &(nbSolPR[k-1]), &(nbSolPRMax[k-1]));
+				if (solPR->p2 > solSup[k]->p2) {
+					if (solPR->p1 > solSup[k-1]->p1) {
+						//printf("CARIBOU\n");
+						assert((solPR->p2 <= solSup[k-1]->p2) && (solPR->p2 >= solSup[k]->p2) && (solPR->p1 >= solSup[k-1]->p1) && (solPR->p1 <= solSup[k]->p1));
+						ajouterSolutionDom(lSolPR[k-1], solPR);
+					} else {
+						assert((solPR->p2 > solSup[k-1]->p2) && (solPR->p2 >= solSup[k]->p2) && (solPR->p1 >= solSup[k-1]->p1) && (solPR->p1 <= solSup[k]->p1));
+					}
 					trouve = true;
 				} else {
 					++k;
@@ -170,12 +171,12 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		bool changement;
 		do {
 			changement = false;
-			for (int j = 1; j < nbSolPR[i]; ++j) {
-				Solution *sol1 = solutionsPR[i][j-1];
-				Solution *sol2 = solutionsPR[i][j];
+			for (int j = 1; j < lSolPR[i]->nbSol; ++j) {
+				Solution *sol1 = lSolPR[i]->solutions[j-1];
+				Solution *sol2 = lSolPR[i]->solutions[j];
 				if (sol1->p1 > sol2->p1) {
-					solutionsPR[i][j-1] = sol2;
-					solutionsPR[i][j] = sol1;
+					lSolPR[i]->solutions[j-1] = sol2;
+					lSolPR[i]->solutions[j] = sol1;
 					changement = true;
 				}
 			}
@@ -183,29 +184,30 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 	}
 
 	for (int i = 1; i < nbSup; ++i) {
+		lSolLB->nbSol = 0;
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
 
 		if ((solSup1->p1 < solSup2->p1 -1) && (solSup1->p2 > solSup2->p2 + 1)) {
-			nbSolLB = 0;
 			lambda1 = solSup1->p2 - solSup2->p2;
 			lambda2 = solSup2->p1 - solSup1->p1;
 			p->lambda1 = lambda1;
 			p->lambda2 = lambda2;
 			p->solSup1 = solSup1;
 			p->solSup2 = solSup2;
-			trierIndvar(p);
 
-			ajouterSolutionLB(&solutionsLB, solSup1, &nbSolLB, &nbSolLBMax);
-			ajouterSolutionLB(&solutionsLB, solSup2, &nbSolLB, &nbSolLBMax);
-			//nbSolLB = 2;
+			ajouterSolutionLB(lSolLB, solSup1);
+			ajouterSolutionLB(lSolLB, solSup2);
 
-			LB = meilleureBorne(solutionsPR[i-1], nbSolPR[i-1], p);
-			p->LB = LB;
+			LB = meilleureBorne(lSolPR[i-1], p);
+			p->LB = LB;//meilleureBorne(lSolLB, p);
 
-			int nbSolAdm;
+			printf("lSolPR->nbSol=%d\n", lSolPR[i-1]->nbSol);
+			printf("PR (%d,%d)-(%d,%d) : %d\n", lSolPR[i-1]->solutions[0]->p1, lSolPR[i-1]->solutions[0]->p2, lSolPR[i-1]->solutions[lSolPR[i-1]->nbSol-1]->p1, lSolPR[i-1]->solutions[lSolPR[i-1]->nbSol-1]->p2, LB = meilleureBorne(lSolPR[i-1], p));
+			printf("LB (%d,%d)-(%d,%d) : %d\n", lSolLB->solutions[0]->p1, lSolLB->solutions[0]->p2, lSolLB->solutions[lSolLB->nbSol-1]->p1, lSolLB->solutions[lSolLB->nbSol-1]->p2, LB = meilleureBorne(lSolLB, p));
+			printf("\n");
 
-			fixer01(p, solSup1->p1, solSup2->p2, solutionsPR[i-1], nbSolPR[i-1]);
+			fixer01(p, solSup1->p1, solSup2->p2, lSolPR[i-1]);
 
 			if (p->nBis > 0) {
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
@@ -220,10 +222,10 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 					Chemin *chem = TAS_maximum(tas);
 					TAS_retirerMax(tas);
 					Solution *sol = creerSolution(p, chem);
-					if ((sol->p1 > solSup1->p1) && (sol->p2 > solSup2->p2) && estEfficace(resultat, *nbSol, sol)) {
-						ajouterSolution(&resultat, sol, nbSol, &nbSolMax);
-						ajouterSolutionLB(&solutionsLB, sol, &nbSolLB, &nbSolLBMax);
-						newLB = meilleureBorne(solutionsLB, nbSolLB, p);
+					if ((sol->p1 > solSup1->p1) && (sol->p2 > solSup2->p2) && estEfficace(resultat, sol)) {
+						ajouterSolution(resultat, sol);
+						ajouterSolutionLB(lSolLB, sol);
+						newLB = meilleureBorne(lSolLB, p);
 						if (newLB > LB) {
 							LB = newLB;
 							p->LB = newLB;
@@ -243,11 +245,11 @@ Solution **trouverSolutions(Probleme *p, int *nbSol) {
 		}
 	}
 
-	printf("COCO\n");
+	//printf("COCO\n");
 	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
 
-	plotAll(resultat, *nbSol, solSup, nbSup);
+	//plotAll(resultat, *nbSol, solSup, nbSup);
 
 	return resultat;
 }
@@ -256,11 +258,10 @@ int main() {
 	clock_t debut, fin;
 
 	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("ZTL28.DAT");
-	int nbSol;
+	//Probleme *p = genererProbleme("ZTL105.DAT");
 
 	debut = clock();
-	Solution **nonDominated = trouverSolutions(p, &nbSol);
+	ListeSol *resultat = trouverSolutions(p);
 	fin = clock();
 
 
@@ -268,11 +269,11 @@ int main() {
 	bool changement;
 	do {
 		changement = false;
-		for (int i = 1; i < nbSol; ++i) {
-			if (nonDominated[i-1]->p2 < nonDominated[i]->p2) {
-				Solution *sol = nonDominated[i];
-				nonDominated[i] = nonDominated[i-1];
-				nonDominated[i-1] = sol;
+		for (int i = 1; i < resultat->nbSol; ++i) {
+			if (resultat->solutions[i-1]->p2 < resultat->solutions[i]->p2) {
+				Solution *sol = resultat->solutions[i];
+				resultat->solutions[i] = resultat->solutions[i-1];
+				resultat->solutions[i-1] = sol;
 				changement = true;
 			}
 		}
@@ -280,13 +281,13 @@ int main() {
 
 	/*printf("%d solutions:\n", nbSol);
 	for (int i = 0; i < nbSol; ++i) {
-	printf("(%d, %d):", nonDominated[i]->p1, nonDominated[i]->p2);
+	printf("(%d, %d):", resultat->solutions[i]->p1, resultat->solutions[i]->p2);
 		printf("\n");
 	}*/
-	printf("%d solutions:\n", nbSol);
+	printf("%d solutions:\n", resultat->nbSol);
 	printf("temps: %fs\n", (double) (fin-debut)/CLOCKS_PER_SEC);
 
 	printf("COCO\n");
 
-	//plot(nonDominated, nbSol);
+	//plot(resultat->solutions, nbSol);
 }

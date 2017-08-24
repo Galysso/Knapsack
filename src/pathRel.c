@@ -7,12 +7,11 @@
 
 #include <assert.h>
 
-Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, int *nbSol) {
-	*nbSol = 0;
+ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 	int n = p->n;
-	int nbSolMax = 2*n;
-	Solution **solAdm = (Solution **) malloc(n*sizeof(Solution *));
+	ListeSol *lSolAdm = initListeSol(n);
 	int hd = 0;
+
 	// On calcule la distance de hamming entre les solutions du path relinking
 	for (int i = 0; i < p->n; ++i) {
 		if (initSol->var[i] != guidingSol->var[i]) {
@@ -26,7 +25,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 		int bestI;
 		int delta;
 		int i = 0;
-		Solution **solComp;
+		ListeSol *lSolComp;
 		int nComp;
 
 		// On cherche l'indice du premier objet qui diffère la solution courante avec la solution d'arrivée
@@ -75,9 +74,9 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 		// On crée les completions si un objet a été retiré
 		if (!X->var[bestI]) {
 			Solution *Xc = copierSolution(X, n);
-			solComp = completions(Xc, p, &nComp);
-			for (int k = 0; k < nComp; ++k) {
-				//ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
+			lSolComp = completions(Xc, p);
+			for (int k = 0; k < lSolComp->nbSol; ++k) {
+				//ajouterSolutionDom(lSolAdm, lSolComp->solutions[k]);
 			}
 		// Si l'objet a été ajouté et que la solution est complète
 		} else if (estComplete(X, p)) {
@@ -122,7 +121,7 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 
 
 
-			while ((profondeur != -1) && (sum < 1000)) {
+			while ((profondeur != -1) && (sum < 50)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
@@ -148,12 +147,12 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 						// Si la solution est efficace alors on l'ajoute
 						++sum;
 						Solution *Xc2 = copierSolution(Xc, n);
-						solComp = completions(Xc2, p, &nComp);
-						if (nComp == 0) {
-							ajouterSolutionDom(&solAdm, Xc2, nbSol, &nbSolMax);
+						lSolComp = completions(Xc2, p);
+						if (lSolComp->nbSol == 0) {
+							ajouterSolutionDom(lSolAdm, Xc2);
 						} else {
-							for (int k = 0; k < nComp; ++k) {
-								ajouterSolutionDom(&solAdm, solComp[k], nbSol, &nbSolMax);
+							for (int k = 0; k < lSolComp->nbSol; ++k) {
+								ajouterSolutionDom(lSolAdm, lSolComp->solutions[k]);
 							}
 						}
 
@@ -180,21 +179,21 @@ Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, i
 		--hd;
 	}
 
-	printf("nbSol = %d\n", *nbSol);
+	//printf("nbSol = %d\n", *nbSol);
 
 	// on trie les solutions
 	bool changement;
 	do {
 		changement = false;
-		for (int i = 1; i < *nbSol; ++i) {
-			if (solAdm[i-1]->p2 < solAdm[i]->p2) {
-				Solution *sol = solAdm[i];
-				solAdm[i] = solAdm[i-1];
-				solAdm[i-1] = sol;
+		for (int i = 1; i < lSolAdm->nbSol; ++i) {
+			if (lSolAdm->solutions[i-1]->p2 < lSolAdm->solutions[i]->p2) {
+				Solution *sol = lSolAdm->solutions[i];
+				lSolAdm->solutions[i] = lSolAdm->solutions[i-1];
+				lSolAdm->solutions[i-1] = sol;
 				changement = true;
 			}
 		}
 	} while (changement);
 
-	return solAdm;
+	return lSolAdm;
 }

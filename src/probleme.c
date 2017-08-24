@@ -8,17 +8,20 @@
 #include <stdbool.h>
 
 // Calcule la borne minimale actuelle
-int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p) {
+int meilleureBorne(ListeSol *lSolLB, Probleme *p) {
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
 	int LB, LBprim;
 	Solution *solG, *sol;
 
-	LB = lambda1*(solutionsLB[0]->p1 + 1) + lambda2*(solutionsLB[1]->p2 + 1);
+	Solution **solutions = lSolLB->solutions;
+	int nbSol = lSolLB->nbSol;
+
+	LB = lambda1*(solutions[0]->p1 + 1) + lambda2*(solutions[1]->p2 + 1);
 
 	for (int i = 2; i < nbSol; ++i) {
-		solG = solutionsLB[i-1];
-		sol = solutionsLB[i];
+		solG = solutions[i-1];
+		sol = solutions[i];
 		LBprim = lambda1*(solG->p1 + 1) + lambda2*(sol->p2 + 1);
 		if (LBprim < LB) {
 			LB = LBprim;
@@ -29,35 +32,40 @@ int meilleureBorne(Solution **solutionsLB, int nbSol, Probleme *p) {
 }
 
 // Renvoie vrai si une solution n'est pas dominée par les solutions déjà trouvées
-bool estEfficace(Solution **solutions, int fin, Solution *sol) {
+bool estEfficace(ListeSol *lSol, Solution *sol) {
 	int i = 0;
-	while ((i < fin) && ((solutions[i]->p1 < sol->p1) || (solutions[i]->p2 < sol->p2))) {
+	Solution **solutions = lSol->solutions;
+	int nbSol = lSol->nbSol;
+	while ((i < nbSol) && ((solutions[i]->p1 < sol->p1) || (solutions[i]->p2 < sol->p2))) {
 		++i;
 	}
-	return (i == fin);
+	return (i == nbSol);
 }
 
 // Ajoute une solution à la liste des solutions efficaces
-void ajouterSolution(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
-	if (*nbSol == *nbSolMax) {
-		*nbSolMax = (*nbSolMax)*(*nbSolMax);
-		*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+void ajouterSolution(ListeSol *lSol, Solution *sol) {
+	if (lSol->nbSol == lSol->nbMax) {
+		lSol->nbMax = 2*lSol->nbMax;
+		lSol->solutions = (Solution **) realloc(lSol->solutions, lSol->nbMax*sizeof(Solution *));
 	}
-	(*solutions)[*nbSol] = sol;
-	*nbSol = *nbSol + 1;
+	lSol->solutions[lSol->nbSol] = sol;
+	lSol->nbSol += 1;
 }
 
-bool ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *nbSolMax) {
+bool ajouterSolutionDom(ListeSol *lSol, Solution *sol) {
 	int j = 0;
 	bool estDomine = false;
 	Solution *solCourante;
+	Solution **solutions = lSol->solutions;
+	int nbSol = lSol->nbSol;
+	int nbMax = lSol->nbMax;
 
-	while ((j < *nbSol) && (!estDomine)) {
-		solCourante = (*solutions)[j];
-		if ((sol->p1 > (*solutions)[j]->p1) && (sol->p2 > (*solutions)[j]->p2)) {
-			*nbSol = *nbSol - 1;
-			(*solutions)[j] = (*solutions)[*nbSol];
-		} else if ((sol->p1 <= (*solutions)[j]->p1) && (sol->p2 <= (*solutions)[j]->p2)) {
+	while ((j < nbSol) && (!estDomine)) {
+		solCourante = solutions[j];		
+		if ((sol->p1 > solCourante->p1) && (sol->p2 > solCourante->p2)) {
+			--nbSol;
+			solutions[j] = solutions[nbSol];
+		} else if ((sol->p1 <= solCourante->p1) && (sol->p2 <= solCourante->p2)) {
 			estDomine = true;
 		} else {
 			++j;
@@ -65,13 +73,16 @@ bool ajouterSolutionDom(Solution ***solutions, Solution *sol, int *nbSol, int *n
 	}
 
 	if (!estDomine) {
-		if (*nbSol == *nbSolMax) {
-			*nbSolMax = (*nbSolMax)*2;
-			*solutions = (Solution **) realloc(*solutions, *nbSolMax*sizeof(Solution *));
+		if (nbSol == nbMax) {
+			nbMax = nbMax*2;
+			lSol->solutions = (Solution **) realloc(lSol->solutions, nbMax*sizeof(Solution *));
 		}
-		(*solutions)[*nbSol] = sol;
-		*nbSol = *nbSol + 1;
+		lSol->solutions[nbSol] = sol;
+		++nbSol;
 	}
+
+	lSol->nbSol = nbSol;
+	lSol->nbMax = nbMax;
 
 	return (!estDomine);
 }
@@ -115,21 +126,19 @@ void completerGlouton(Solution *sol, Probleme *p) {
 	}
 }
 
-Solution **completions(Solution *sol, Probleme *p, int *nSol) {
+ListeSol *completions(Solution *sol, Probleme *p) {
 	int n = p->n;
-	int maxSol = n;
-	*nSol = 0;
-	Solution *resultat = (Solution *) malloc(maxSol*sizeof(Solution));
 	int profondeur = 0;
 	int i = 0;
 	int *lastI = (int *) malloc(n*sizeof(int));
 
+	ListeSol *lResultat = initListeSol(n);
 	Solution *solC = copierSolution(sol, n);
 
 	while (profondeur >= 0) {
 		if (i == n) {
 			Solution *solC2 = copierSolution(solC, n);
-			ajouterSolutionDom(&resultat, solC2, nSol, &maxSol);
+			ajouterSolutionDom(lResultat, solC2);
 			--profondeur;
 			if (profondeur >= 0) {
 				i = lastI[profondeur];
@@ -157,7 +166,7 @@ Solution **completions(Solution *sol, Probleme *p, int *nSol) {
 		}
 	}
 
-	return resultat;
+	return lResultat;
 }
 
 void trierIndvar(Probleme *p) {
@@ -345,9 +354,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				w1 = w1 + p->weights1[i];
 				w2 = w2 + p->weights2[i];
 				var[p->indVar[i]] = true;
-			}/* else {
-				var[i] = false;
-			}*/
+			}
 		}
 	} else {
 		noeudPrec = (Noeud*) chemin->chemin;
@@ -358,9 +365,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				w1 = w1 + p->weights1[i];
 				w2 = w2 + p->weights2[i];
 				var[p->indVar[i]] = true;
-			}/* else {
-				var[i] = false;
-			}*/
+			}
 		}
 	}
 
@@ -371,7 +376,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
-void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol) {
+void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	int nbNull = 0;
 	solution *s1, *s2;
 	int ret;
@@ -520,10 +525,12 @@ void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol) {
 				} else {
 					// On regarde si le point idéal est dominé par un point du path relinking
 					int k = 0;
-					while ((k < nSol) && ((relP1 > solutionsHeur[k]->p1) || (relP2 > solutionsHeur[k]->p2))) {
+					int nbSol = lSolHeur->nbSol;
+					Solution **solsHeur = lSolHeur->solutions;
+					while ((k < nbSol) && ((relP1 > solsHeur[k]->p1) || (relP2 > solsHeur[k]->p2))) {
 						++k;	
 					}
-					if (k < nSol) {
+					if (k < nbSol) {
 						printf("suppression par point idéal\n");
 						p->nBis -= 1;
 						for (int j = i; j < p->nBis; ++j) {
@@ -561,7 +568,7 @@ void fixer01(Probleme *p, int y1, int y2, Solution **solutionsHeur, int nSol) {
 	free(d.p1);
 	free(d.w1);
 	free(d.w2);
-	printf("nb0=%d\n", nb0);
+	//printf("nb0=%d\n", nb0);
 	//printf("nbNull=%d\n", nbNull);
 
 	// J'adore qu'un plan se déroule sans accroc!
@@ -579,4 +586,11 @@ Solution *copierSolution(Solution *sol, int n) {
 	copie->w2 = sol->w2;
 
 	return copie;
+}
+
+ListeSol *initListeSol(int nbMax) {
+	ListeSol *lSol = (ListeSol *) malloc(sizeof(ListeSol));
+	lSol->solutions = (Solution **) malloc(nbMax*sizeof(Solution *));
+	lSol->nbSol = 0;
+	lSol->nbMax = nbMax;
 }

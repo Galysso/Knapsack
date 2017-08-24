@@ -3,6 +3,6 @@
 
 #include "probleme.h"
 
-Solution **pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol, int *nbSol);
+ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol);
 
 #endif
