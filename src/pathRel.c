@@ -88,7 +88,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			int bestJ2 = -1;
 			int indV;
 			int j = 0;
-			int nDegr = 2;
+			int nDegr = 1;
 
 			while ((nDegr > 0) && (j < n) && (bestJ2 == -1)) {
 				indV = p->indVar[j];
@@ -121,7 +121,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 
 
 
-			while ((profondeur != -1) && (sum < 50)) {
+			while ((profondeur != -1) && (sum < 200)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
@@ -149,12 +149,18 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 						Solution *Xc2 = copierSolution(Xc, n);
 						lSolComp = completions(Xc2, p);
 						if (lSolComp->nbSol == 0) {
-							ajouterSolutionDom(lSolAdm, Xc2);
+							if (!ajouterSolutionDom(lSolAdm, Xc2)) {
+								free(Xc2);
+							}
 						} else {
 							for (int k = 0; k < lSolComp->nbSol; ++k) {
-								ajouterSolutionDom(lSolAdm, lSolComp->solutions[k]);
+								if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
+									free(lSolComp->solutions[k]);
+								}
 							}
 						}
+						free(lSolComp->solutions);
+						free(lSolComp);
 
 						// Puis on réajoute l'objet pour continuer sur la même profondeur
 						Xc->var[indV] = true;

@@ -100,9 +100,8 @@ void ajouterSolutionLB(ListeSol *lSolLB, Solution *sol) {
 ListeSol *trouverSolutions(Probleme *p) {
 	int lambda1, lambda2;		// poids de la somme pondérée
 	int LB, newLB;				// borne inférieure et plus petite borne inférieure actuelle
-	int nbSup, nbMaxSup;	// remplissages et tailles allouées des tableaux
 	int *nNoeuds;				// nombre de noeuds pour chaque colonne du graphe
-	Solution **solSup; 			// solutions supportées
+	ListeSol *lSolSup; 			// solutions supportées
 	ListeSol *lSolLB; 			// solutions trouvées dans le triangle pour la borne
 	ListeSol *resultat;				// solutions efficaces trouvées
 
@@ -110,32 +109,33 @@ ListeSol *trouverSolutions(Probleme *p) {
 
 	resultat = initListeSol(p->n);
 	lSolLB = initListeSol(p->n);
-	solSup = glpkSolutionsSupportees(p, &nbSup, &nbMaxSup);
+	lSolSup = glpkSolutionsSupportees(p);
+	Solution **solSup = lSolSup->solutions;
 
 	// On ajoute à liste des solutions les points supportés (attention aux extremes)
 	ajouterSolution(resultat, solSup[1]);
-	ajouterSolution(resultat, solSup[nbSup-2]);
+	ajouterSolution(resultat, solSup[lSolSup->nbSol-2]);
 	if (estEfficace(resultat, solSup[0])) {
 		ajouterSolution(resultat, solSup[0]);
 	}
-	if (estEfficace(resultat, solSup[nbSup-1])) {
-		ajouterSolution(resultat, solSup[nbSup-1]);
+	if (estEfficace(resultat, solSup[lSolSup->nbSol-1])) {
+		ajouterSolution(resultat, solSup[lSolSup->nbSol-1]);
 	}
-	for (int i = 2; i < nbSup-2; ++i) {
+	for (int i = 2; i < lSolSup->nbSol-2; ++i) {
 		ajouterSolution(resultat, solSup[i]);
 	}
 
 	// Une liste de solutions par triangle
-	ListeSol **lSolPR = (ListeSol **) malloc((nbSup-1)*sizeof(ListeSol *));
+	ListeSol **lSolPR = (ListeSol **) malloc((lSolSup->nbSol-1)*sizeof(ListeSol *));
 
-	for (int i = 1; i < nbSup; ++i) {
-		lSolPR[i-1] = initListeSol(nbSup);
+	for (int i = 1; i < lSolSup->nbSol; ++i) {
+		lSolPR[i-1] = initListeSol(lSolSup->nbSol);
 		ajouterSolutionDom(lSolPR[i-1], solSup[i-1]);
 		ajouterSolutionDom(lSolPR[i-1], solSup[i]);
 	}
 
 	// On réalise des paths relinking entre les solutions supportées
-	for (int i = 1; i < nbSup; ++i) {
+	for (int i = 1; i < lSolSup->nbSol; ++i) {
 		p->lambda1 = solSup[i-1]->p2 - solSup[i]->p2;
 		p->lambda2 = solSup[i]->p1 - solSup[i-1]->p1;
 		p->solSup1 = solSup[i-1];
@@ -149,14 +149,10 @@ ListeSol *trouverSolutions(Probleme *p) {
 			Solution *solPR = lSolAdm->solutions[j];
 			bool trouve = false;
 			int k = 1;
-			while ((k < nbSup) && (!trouve)) {
+			while ((k < lSolSup->nbSol) && (!trouve)) {
 				if (solPR->p2 > solSup[k]->p2) {
 					if (solPR->p1 > solSup[k-1]->p1) {
-						//printf("CARIBOU\n");
-						assert((solPR->p2 <= solSup[k-1]->p2) && (solPR->p2 >= solSup[k]->p2) && (solPR->p1 >= solSup[k-1]->p1) && (solPR->p1 <= solSup[k]->p1));
 						ajouterSolutionDom(lSolPR[k-1], solPR);
-					} else {
-						assert((solPR->p2 > solSup[k-1]->p2) && (solPR->p2 >= solSup[k]->p2) && (solPR->p1 >= solSup[k-1]->p1) && (solPR->p1 <= solSup[k]->p1));
 					}
 					trouve = true;
 				} else {
@@ -167,7 +163,7 @@ ListeSol *trouverSolutions(Probleme *p) {
 	}
 
 	// On trie les solutions du path relinking pour en calculer une borne
-	for (int i = 0; i < nbSup-1; ++i) {
+	for (int i = 0; i < lSolSup->nbSol-1; ++i) {
 		bool changement;
 		do {
 			changement = false;
@@ -183,7 +179,7 @@ ListeSol *trouverSolutions(Probleme *p) {
 		} while (changement);
 	}
 
-	for (int i = 1; i < nbSup; ++i) {
+	for (int i = 1; i < lSolSup->nbSol; ++i) {
 		lSolLB->nbSol = 0;
 		Solution *solSup1 = solSup[i-1];
 		Solution *solSup2 = solSup[i];
@@ -257,8 +253,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("ZTL105.DAT");
+	//Probleme *p = genererProblemeGautier("instance100.DAT");
+	Probleme *p = genererProbleme("ZTL105.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);

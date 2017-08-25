@@ -5,7 +5,7 @@
 
 #include <glpk.h>
 
-Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax);
-void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, int *nMax, int *nSol, Solution *sol1, Solution *sol2);
+ListeSol *glpkSolutionsSupportees(Probleme *prob);
+void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, ListeSol *lSol, Solution *sol1, Solution *sol2);
 
 #endif

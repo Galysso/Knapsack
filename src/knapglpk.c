@@ -6,11 +6,9 @@
 #include <stdbool.h>
 #include <assert.h>
 
-Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
-	*nMax = prob->n*prob->n;
-	Solution **sols = (Solution **) malloc(*nMax*sizeof(Solution *));
+ListeSol *glpkSolutionsSupportees(Probleme *prob) {
+	ListeSol *lSol = initListeSol(prob->n);
 	Solution *sol;
-	*nSol = 0;
 
 	glp_term_out(0);
 
@@ -50,12 +48,6 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	glp_simplex(glpProb, NULL);
 	glp_intopt(glpProb, NULL);
 
-
-	if (*nSol == *nMax) {
-		*nMax = 2*(*nMax);
-		sols = (Solution **) realloc(sols, *nMax*sizeof(Solution *));
-	}
-	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
 	sol->p1 = (int) glp_mip_obj_val(glpProb);
@@ -72,7 +64,7 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 			sol->var[i] = false;
 		}
 	}
-	sols[0] = sol;
+	ajouterSolution(lSol, sol);
 
 	for (int i = 0; i < n; ++i) {
 		glp_set_obj_coef(glpProb, i+1, prob->profits2[i]);
@@ -82,11 +74,6 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 	glp_simplex(glpProb, NULL);
 	glp_intopt(glpProb, NULL);
 
-	if (*nSol == *nMax) {
-		*nMax = 2*(*nMax);
-		sols = (Solution **) realloc(sols, *nMax*sizeof(Solution *));
-	}
-	*nSol = *nSol + 1;
 	sol = (Solution *) malloc(sizeof(Solution));
 	sol->var = (bool *) malloc(n*sizeof(bool));
 	sol->p1 = 0;
@@ -103,17 +90,19 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 			sol->var[i] = false;
 		}
 	}
-	sols[1] = sol;
+	ajouterSolution(lSol, sol);
 
+	Solution **sols = lSol->solutions;
 	if ((sols[1]->p1 < sols[0]->p1) && (sols[1]->p2 > sols[0]->p2)) {
-		glpkDichotomieSupportees(prob, glpProb, &sols, nMax, nSol, sols[1], sols[0]);
+		glpkDichotomieSupportees(prob, glpProb, lSol, sols[1], sols[0]);
 	}
 
 	// on trie les solutions selon l'ordre lexicographique
+	sols = lSol->solutions;
 	bool changement;
 	do {
 		changement = false;
-		for (int i = 1; i < *nSol; ++i) {
+		for (int i = 1; i < lSol->nbSol; ++i) {
 			if (sols[i-1]->p2 < sols[i]->p2) {
 				sol = sols[i];
 				sols[i] = sols[i-1];
@@ -123,11 +112,11 @@ Solution **glpkSolutionsSupportees(Probleme *prob, int *nSol, int *nMax) {
 		}
 	} while (changement);
 
-	return sols;
+	return lSol;
 }
 
 
-void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sols, int *nMax, int *nSol, Solution *sol1, Solution *sol2) {
+void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, ListeSol *lSol, Solution *sol1, Solution *sol2) {
 	int lambda1, lambda2;
 	lambda1 = sol1->p2 - sol2->p2;
 	lambda2 = sol2->p1 - sol1->p1;
@@ -138,10 +127,6 @@ void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sol
 	glp_simplex(glpProb, NULL);
 	glp_intopt(glpProb, NULL);
 
-	if (*nSol == *nMax) {
-		*nMax = 2*(*nMax);
-		*sols = (Solution **) realloc(*sols, *nMax*sizeof(Solution *));
-	}
 	Solution *nouvelleSol = (Solution *) malloc(sizeof(Solution));
 	nouvelleSol->var = (bool *) malloc(prob->n*sizeof(bool));
 	nouvelleSol->p1 = 0;
@@ -161,9 +146,8 @@ void glpkDichotomieSupportees(Probleme *prob, glp_prob *glpProb, Solution ***sol
 	}
 
 	if ((lambda1*nouvelleSol->p1 + lambda2*nouvelleSol->p2) > (lambda1*sol1->p1 + lambda2*sol1->p2)) {
-		(*sols)[*nSol] = nouvelleSol;
-		*nSol = *nSol + 1;
-		glpkDichotomieSupportees(prob, glpProb, sols, nMax, nSol, sol1, nouvelleSol);
-		glpkDichotomieSupportees(prob, glpProb, sols, nMax, nSol, nouvelleSol, sol2);
+		ajouterSolution(lSol, nouvelleSol);
+		glpkDichotomieSupportees(prob, glpProb, lSol, sol1, nouvelleSol);
+		glpkDichotomieSupportees(prob, glpProb, lSol, nouvelleSol, sol2);
 	}
 }

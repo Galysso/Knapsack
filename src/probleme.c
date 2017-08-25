@@ -42,7 +42,7 @@ bool estEfficace(ListeSol *lSol, Solution *sol) {
 	return (i == nbSol);
 }
 
-// Ajoute une solution à la liste des solutions efficaces
+// Ajoute une solution à la fin de la liste des solutions
 void ajouterSolution(ListeSol *lSol, Solution *sol) {
 	if (lSol->nbSol == lSol->nbMax) {
 		lSol->nbMax = 2*lSol->nbMax;
@@ -568,7 +568,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	free(d.p1);
 	free(d.w1);
 	free(d.w2);
-	//printf("nb0=%d\n", nb0);
+	printf("nb0=%d\n", nb0);
 	//printf("nbNull=%d\n", nbNull);
 
 	// J'adore qu'un plan se déroule sans accroc!
