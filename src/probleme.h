@@ -15,13 +15,20 @@ struct Probleme {
 	char *nomFichier;
 	int n;					// nombre d'objets
 	int nBis;				// nombre d'objets du sous-problème
-	int omega1;				// capacité du sac à dos
+	int omega1;				// capacités du sac à dos
 	int omega2;
 	int *profits1;			// coefficients des variables dans la fonction objectif
 	int *profits2;
 	int *weights1;			// poids des variables dans la fonction objectif
 	int *weights2;
 	int *indVar;
+
+	int *varFix1;
+	int nVarFix1;
+	int z1min;
+	int z2min;
+	int w1min;
+	int w2min;
 
 	Solution *solSup1;
 	Solution *solSup2;
@@ -31,8 +38,6 @@ struct Probleme {
 
 	int *pCumul1;
 	int *pCumul2;
-
-	int *sortedInd;
 };
 
 struct Solution {
@@ -61,6 +66,7 @@ void completerGlouton(Solution *sol, Probleme *p);
 ListeSol *completions(Solution *sol, Probleme *p);
 // Trie les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
 void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
+void calculerPoidsCumules(Probleme *p);
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
 Solution *creerSolution(Probleme *p, Chemin *chemin);

@@ -75,9 +75,10 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 		if (!X->var[bestI]) {
 			Solution *Xc = copierSolution(X, n);
 			lSolComp = completions(Xc, p);
-			for (int k = 0; k < lSolComp->nbSol; ++k) {
-				//ajouterSolutionDom(lSolAdm, lSolComp->solutions[k]);
-			}
+			/*for (int k = 0; k < lSolComp->nbSol; ++k) {
+				ajouterSolutionDom(lSolAdm, lSolComp->solutions[k]);
+			}*/
+			free(Xc);
 		// Si l'objet a été ajouté et que la solution est complète
 		} else if (estComplete(X, p)) {
 			// Alors on effectue une oscillation d'une profondeur de 2
@@ -121,7 +122,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 
 
 
-			while ((profondeur != -1) && (sum < 200)) {
+			while ((profondeur != -1) && (sum < 0)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
@@ -149,14 +150,15 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 						Solution *Xc2 = copierSolution(Xc, n);
 						lSolComp = completions(Xc2, p);
 						if (lSolComp->nbSol == 0) {
-							if (!ajouterSolutionDom(lSolAdm, Xc2)) {
+							/*if (!ajouterSolutionDom(lSolAdm, Xc2)) {
 								free(Xc2);
-							}
+							}*/
 						} else {
+							free(Xc2);
 							for (int k = 0; k < lSolComp->nbSol; ++k) {
-								if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
+								/*if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
 									free(lSolComp->solutions[k]);
-								}
+								}*/
 							}
 						}
 						free(lSolComp->solutions);
@@ -178,7 +180,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 					++ind;
 				}
 			}
-			
+			free(Xc);
 			free(lastI);
 		}
 

@@ -190,6 +190,18 @@ void trierIndvar(Probleme *p) {
 	} while(changement);
 }
 
+void calculerPoidsCumules(Probleme *p) {
+	// calcul des profits cumules
+	int indJ = p->indVar[p->nBis-1];
+	p->pCumul1[p->nBis] = 0;
+	p->pCumul2[p->nBis] = 0;
+	for (int j = p->nBis-1; j >= 0; --j) {
+		indJ = p->indVar[j];
+		p->pCumul1[j] = p->pCumul1[j+1] + p->profits1[indJ];
+		p->pCumul2[j] = p->pCumul2[j+1] + p->profits2[indJ];
+	}
+}
+
 Probleme *genererProbleme(char *nomFichier) {
 	Probleme *p = (Probleme *) malloc(sizeof(Probleme));
 
@@ -238,13 +250,11 @@ Probleme *genererProbleme(char *nomFichier) {
 		p->pCumul1 = (int *) malloc((1+nbVariable)*sizeof(int));
 		p->pCumul2 = (int *) malloc((1+nbVariable)*sizeof(int));
 
-		p->pCumul1[nbVariable] = 0;
-		p->pCumul2[nbVariable] = 0;
-		for (int j = nbVariable-1; j >= 0; --j) {
-			int indJ = indVar[j];
-			p->pCumul1[j] = p->pCumul1[j+1] + profits1[indJ];
-			p->pCumul2[j] = p->pCumul2[j+1] + profits2[indJ];
-		}
+		p->varFix1 = (int *) malloc(nbVariable*sizeof(int));
+		p->nVarFix1 = 0;
+
+		p->w1min = 0;
+		p->w2min = 0;
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -305,6 +315,12 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 
 		p->pCumul1 = (int *) malloc((1+nbVariable)*sizeof(int));
 		p->pCumul2 = (int *) malloc((1+nbVariable)*sizeof(int));
+
+		p->varFix1 = (int *) malloc(nbVariable*sizeof(int));
+		p->nVarFix1 = 0;
+
+		p->w1min = 0;
+		p->w2min = 0;
 	} else {
 		printf("Erreur lors de l'ouverture du fichier %s\n", nomFichier);
 	}
@@ -322,12 +338,15 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 
 	sol->p1 = chemin->p1;
 	sol->p2 = chemin->p2;
-	int w1 = 0;
-	int w2 = 0;
 
 	// On initialise la solution avec aucun objet
 	for (int i = 0; i < p->n; ++i) {
 		var[i] = false;
+	}
+
+	// On ajoute les objets qui appartiennent forcément à la solution
+	for (int i = 0; i < p->nVarFix1; ++i) {
+		var[p->varFix1[i]] = true;
 	}
 
 	// On note les objets qui sont dans la solution en parcourant le chemin
@@ -340,6 +359,8 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 			chemin = (Chemin*) chemin->chemin;
 		}
 		noeudPrec = (Noeud*) chemin->chemin;
+		sol->w1 = noeudPrec->w1;
+		sol->w2 = noeudPrec->w2;
 
 		--nDev;
 		for (int i = nBis-1; i >= 0; --i) {
@@ -351,26 +372,24 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				noeudPrec = noeud->precBest;
 			}
 			if (noeud->w1 != noeudPrec->w1) {
-				w1 = w1 + p->weights1[i];
-				w2 = w2 + p->weights2[i];
 				var[p->indVar[i]] = true;
 			}
 		}
 	} else {
 		noeudPrec = (Noeud*) chemin->chemin;
+		sol->w1 = noeudPrec->w1;
+		sol->w2 = noeudPrec->w2;
+
 		for (int i = nBis-1; i >= 0; --i) {
 			noeud = noeudPrec;
 			noeudPrec = noeud->precBest;
 			if (noeud->w1 != noeudPrec->w1) {
-				w1 = w1 + p->weights1[i];
-				w2 = w2 + p->weights2[i];
 				var[p->indVar[i]] = true;
 			}
 		}
 	}
 
-	sol->w1 = w1;
-	sol->w2 = w2;
+	//printf("(%d,%d)\n", sol->p1, sol->p2);
 	sol->var = var;
 
 	return sol;
@@ -400,10 +419,46 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	p->nBis = p->n;
 	d.nbItem = p->nBis-1;
 	int i = 0;
+
+	p->nVarFix1 += 0;
+	p->z1min = 0;
+	p->z2min = 0;
+	p->w1min = 0;
+	p->w2min = 0;
+	// Tant que tous les items n'ont pas été testés
+
+
+
+				
+				/*p->varFix1[p->nVarFix1] = 5;
+				p->nVarFix1 += 1;
+				p->z1min += p->profits1[5];
+				p->z2min += p->profits2[5];
+				p->w1min += p->weights1[5];
+				p->w2min += p->weights2[5];
+				int k = 0;
+				p->nBis -= 1;
+				while (p->indVar[k] != 5) {
+					++k;
+				}
+				for (int j = k; j < p->nBis; ++j) {
+					p->indVar[j] = p->indVar[j+1];
+				}*/
+				
+
+				//++nb0;
+
+
+
+
 	while (i < d.nbItem) {
+		// ------------------------------------------------ 1er cas, on teste selon lambda1*Z1 + lambda2*Z2
+		// ------------------------- On fixe la variable à 1
 		int indI = p->indVar[i];
-		d.omega1 = p->omega1 - p->weights1[indI];
-		d.omega2 = p->omega2 - p->weights2[indI];
+		d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
+		d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
+
+		//printf("omega1 = %d ET omega2 = %d\n", d.omega1, d.omega2);
 		d.nbItem = p->nBis-1;
 		d.maxZ1 = 0;
 		for (int j = 0; j < i; ++j) {
@@ -424,82 +479,55 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 			startDichoMu(&s1,&s2,&d);
 		}
 
-		if (s1 == NULL) {
-			++nbNull;
-			Solution *sol = malloc(sizeof(Solution *));
-			sol->p1 = p->profits1[indI];
-			sol->p2 = p->profits2[indI];
-			sol->w1 = p->weights1[indI];
-			sol->w2 = p->weights2[indI];
-			for (int j = 0; j < i; ++j) {
-				if (s2->tab[j]) {
-					int indJ = p->indVar[j];
-					sol->p1 += p->profits1[indJ];
-					sol->p2 += p->profits2[indJ];
-					sol->w1 += p->weights1[indJ];
-					sol->w2 += p->weights2[indJ];
-				}
-			}
-			for (int j = i+1; j <= d.nbItem; ++j) {
-				if (s2->tab[j-1]) {
-					int indJ = p->indVar[j];
-					sol->p1 += p->profits1[indJ];
-					sol->p2 += p->profits2[indJ];
-					sol->w1 += p->weights1[indJ];
-					sol->w2 += p->weights2[indJ];
-				}
-			}
-		}
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			free(s2);
 			s2 = s1;
 		}
 		// Si la borne supérieure de la solution optimale n'atteint pas le triangle
-		if (s2->z1 + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
+		if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
 			// On fixe la variable à 0, donc on la retire du problème
+			printf("FIXATION 0 PAR 1\n");
 			p->nBis -= 1;
 			for (int j = i; j < p->nBis; ++j) {
 				p->indVar[j] = p->indVar[j+1];
 			}
 			++nb0;
 		} else {
-			free(s2->tab);
-			free(s2);
-			for (int j = 0; j < i; ++j) {
-				d.p1[j] = p->profits2[p->indVar[j]];
-			}
-			for (int j = i+1; j < p->nBis; ++j) {
-				d.p1[j-1] = p->profits2[p->indVar[j]];
-			}
+			// ------------------------- On fixe la variable à 0
+			/*d.omega1 = p->omega1 - p->w1min;
+			d.omega2 = p->omega2 - p->w2min;
 
 			ret = initDichoMu(&s1,&s2,&d);
 			if (ret == 0) {
 				startDichoMu(&s1,&s2,&d);
 			}
 
-			if (s1 == NULL) {
-				++nbNull;
-			}
 			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 				free(s2);
 				s2 = s1;
 			}
-			relP2 = s2->z1;
-
-			if (s2->z1 + p->profits2[indI] < y2) {
+			// Si la borne supérieure de la solution optimale n'atteint pas le triangle
+			if (s2->z1 + p->z2min < LB) {
+				printf("Fixation à 1\n");
+				// On fixe la variable à 1, donc on la retire du problème
+				p->varFix1[p->nVarFix1] = p->indVar[i];
+				p->nVarFix1 += 1;
+				p->z1min += p->profits1[p->indVar[i]];
+				p->z2min += p->profits2[p->indVar[i]];
+				p->w1min += p->weights1[p->indVar[i]];
+				p->w2min += p->weights2[p->indVar[i]];
 				p->nBis -= 1;
 				for (int j = i; j < p->nBis; ++j) {
 					p->indVar[j] = p->indVar[j+1];
 				}
-				++nb0;
-			} else {
+			} else {*/
 				free(s2->tab);
 				free(s2);
 				for (int j = 0; j < i; ++j) {
-					d.p1[j] = p->profits1[p->indVar[j]];
+					d.p1[j] = p->profits2[p->indVar[j]];
 				}
 				for (int j = i+1; j < p->nBis; ++j) {
-					d.p1[j-1] = p->profits1[p->indVar[j]];
+					d.p1[j-1] = p->profits2[p->indVar[j]];
 				}
 
 				ret = initDichoMu(&s1,&s2,&d);
@@ -514,34 +542,67 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					free(s2);
 					s2 = s1;
 				}
-				relP1 = s2->z1;
+				relP2 = s2->z1 + p->z2min;
 
-				if (s2->z1 + p->profits1[indI] < y1) {
+				if (s2->z1 + p->z2min + p->profits2[indI] < y2) {
+					printf("FIXATION 0 PAR 2\n");
 					p->nBis -= 1;
 					for (int j = i; j < p->nBis; ++j) {
 						p->indVar[j] = p->indVar[j+1];
 					}
 					++nb0;
 				} else {
-					// On regarde si le point idéal est dominé par un point du path relinking
-					int k = 0;
-					int nbSol = lSolHeur->nbSol;
-					Solution **solsHeur = lSolHeur->solutions;
-					while ((k < nbSol) && ((relP1 > solsHeur[k]->p1) || (relP2 > solsHeur[k]->p2))) {
-						++k;	
+					free(s2->tab);
+					free(s2);
+					for (int j = 0; j < i; ++j) {
+						d.p1[j] = p->profits1[p->indVar[j]];
 					}
-					if (k < nbSol) {
-						printf("suppression par point idéal\n");
+					for (int j = i+1; j < p->nBis; ++j) {
+						d.p1[j-1] = p->profits1[p->indVar[j]];
+					}
+
+					ret = initDichoMu(&s1,&s2,&d);
+					if (ret == 0) {
+						startDichoMu(&s1,&s2,&d);
+					}
+
+					if (s1 == NULL) {
+						++nbNull;
+					}
+					if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+						free(s2);
+						s2 = s1;
+					}
+					relP1 = s2->z1 + p->z1min;
+
+					if (s2->z1 + p->z1min + p->profits1[indI] < y1) {
+						printf("FIXATION 0 PAR 3\n");
 						p->nBis -= 1;
 						for (int j = i; j < p->nBis; ++j) {
 							p->indVar[j] = p->indVar[j+1];
 						}
 						++nb0;
 					} else {
-						++i;
+						// On regarde si le point idéal est dominé par un point du path relinking
+						int k = 0;
+						int nbSol = lSolHeur->nbSol;
+						Solution **solsHeur = lSolHeur->solutions;
+						while ((k < nbSol) && ((relP1 > solsHeur[k]->p1) || (relP2 > solsHeur[k]->p2))) {
+							++k;	
+						}
+						if (k < nbSol) {
+							printf("FIXATION 0 PAR 4\n");
+							p->nBis -= 1;
+							for (int j = i; j < p->nBis; ++j) {
+								p->indVar[j] = p->indVar[j+1];
+							}
+							++nb0;
+						} else {
+							++i;
+						}
 					}
 				}
-			}
+			//}
 		}
 
 		//getchar();
@@ -549,16 +610,6 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 		// Libération mémoire
 		free(s2->tab);
 		free(s2);
-	}
-
-	// calcul des profits cumules
-	int indJ = p->indVar[p->nBis-1];
-	p->pCumul1[p->nBis] = 0;
-	p->pCumul2[p->nBis] = 0;
-	for (int j = p->nBis-1; j >= 0; --j) {
-		indJ = p->indVar[j];
-		p->pCumul1[j] = p->pCumul1[j+1] + p->profits1[indJ];
-		p->pCumul2[j] = p->pCumul2[j+1] + p->profits2[indJ];
 	}
 
 	/*for (int j = 0; j <= p->nBis; ++j) {
@@ -571,6 +622,8 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	printf("nb0=%d\n", nb0);
 	//printf("nbNull=%d\n", nbNull);
 
+
+	calculerPoidsCumules(p);
 	// J'adore qu'un plan se déroule sans accroc!
 }
 

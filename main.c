@@ -9,30 +9,30 @@
 
 #include <assert.h>
 
-void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup);
+void plotAll(ListeSol *lSolSup, ListeSol *lSol);
 void plotSup(Solution **solSup, int nbSolSup);
 
-void plotAll(Solution **solutions, int nbSol, Solution **solSup, int nbSolSup) {
-    FILE *plotNonDom = fopen("nonDominated.dat", "w");
-    FILE *plotSolSup = fopen("solSupportees.dat", "w");
+void plotAll(ListeSol *lSolSup, ListeSol *lSol) {
+    FILE *plotNonDom = fopen("points non dominés", "w");
+    FILE *plotSolSup = fopen("solutions supportées", "w");
     FILE *gnuplotPipe = popen ("gnuplot -persistent", "w");
-    for (int i=0; i < nbSol; i++) {
-		fprintf(plotNonDom, "%d %d \n", solutions[i]->p1, solutions[i]->p2); //Write the data to a temporary file
+	fprintf(plotSolSup, "%d %d\n", lSolSup->solutions[0]->p1, lSolSup->solutions[0]->p2);
+	for (int i = 1; i < lSolSup->nbSol; ++i) {
+		fprintf(plotSolSup, "%d %d\n", lSolSup->solutions[i-1]->p1, lSolSup->solutions[i]->p2);
+		fprintf(plotSolSup, "%d %d\n", lSolSup->solutions[i]->p1, lSolSup->solutions[i]->p2);
 	}
-	fprintf(plotSolSup, "%d %d\n", solSup[0]->p1, solSup[0]->p2);
-	for (int i = 1; i < nbSolSup; ++i) {
-		fprintf(plotSolSup, "%d %d\n", solSup[i-1]->p1, solSup[i]->p2);
-		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
+	for (int i = lSolSup->nbSol-2; i >= 0; --i) {
+		fprintf(plotSolSup, "%d %d\n", lSolSup->solutions[i]->p1, lSolSup->solutions[i]->p2);
 	}
-	for (int i = nbSolSup-2; i >= 0; --i) {
-		fprintf(plotSolSup, "%d %d\n", solSup[i]->p1, solSup[i]->p2);
+	for (int i=0; i < lSol->nbSol; i++) {
+		fprintf(plotNonDom, "%d %d \n", lSol->solutions[i]->p1, lSol->solutions[i]->p2); //Write the data to a temporary file
 	}
 
 	fclose(plotNonDom);
 	fclose(plotSolSup);
 	fprintf(gnuplotPipe, "set title \"Points non dominés\"\n"); //Send commands to gnuplot one by one.
 	fflush(gnuplotPipe);
-	fprintf(gnuplotPipe, "plot 'nonDominated.dat' using 1:2, 'solSupportees.dat' using 1:2 with lines\n");
+	fprintf(gnuplotPipe, "plot 'solutions supportées' using 1:2 with lines, 'points non dominés' using 1:2\n");
 	fflush(gnuplotPipe);
 }
 
@@ -203,6 +203,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 			printf("LB (%d,%d)-(%d,%d) : %d\n", lSolLB->solutions[0]->p1, lSolLB->solutions[0]->p2, lSolLB->solutions[lSolLB->nbSol-1]->p1, lSolLB->solutions[lSolLB->nbSol-1]->p2, LB = meilleureBorne(lSolLB, p));
 			printf("\n");
 
+			trierIndvar(p);
+
 			fixer01(p, solSup1->p1, solSup2->p2, lSolPR[i-1]);
 
 			if (p->nBis > 0) {
@@ -245,7 +247,7 @@ ListeSol *trouverSolutions(Probleme *p) {
 	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
 
-	//plotAll(resultat, *nbSol, solSup, nbSup);
+	plotAll(lSolSup, resultat);
 
 	return resultat;
 }
@@ -253,8 +255,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 int main() {
 	clock_t debut, fin;
 
-	//Probleme *p = genererProblemeGautier("instance100.DAT");
-	Probleme *p = genererProbleme("ZTL105.DAT");
+	Probleme *p = genererProblemeGautier("instance100.DAT");
+	//Probleme *p = genererProbleme("A1.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);
@@ -275,9 +277,12 @@ int main() {
 		}
 	} while (changement);
 
-	/*printf("%d solutions:\n", nbSol);
-	for (int i = 0; i < nbSol; ++i) {
-	printf("(%d, %d):", resultat->solutions[i]->p1, resultat->solutions[i]->p2);
+	/*printf("%d solutions:\n", resultat->nbSol);
+	for (int i = 0; i < resultat->nbSol; ++i) {
+		printf("(%d, %d):", resultat->solutions[i]->p1, resultat->solutions[i]->p2);
+		for (int j = 0; j < p->n; ++j) {
+			printf("%d", (resultat->solutions[i])->var[j]);
+		}
 		printf("\n");
 	}*/
 	printf("%d solutions:\n", resultat->nbSol);
