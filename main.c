@@ -92,7 +92,8 @@ void ajouterSolutionLB(ListeSol *lSolLB, Solution *sol) {
 	for (int i = nbSol; i > ind; --i) {
 		solutions[i] = solutions[i-1];
 	}
-	solutions[ind] = sol;
+
+	lSolLB->solutions[ind] = sol;
 	lSolLB->nbSol = nbSol+1;
 }
 
@@ -198,10 +199,10 @@ ListeSol *trouverSolutions(Probleme *p) {
 			LB = meilleureBorne(lSolPR[i-1], p);
 			p->LB = LB;//meilleureBorne(lSolLB, p);
 
-			printf("lSolPR->nbSol=%d\n", lSolPR[i-1]->nbSol);
+			/*printf("lSolPR->nbSol=%d\n", lSolPR[i-1]->nbSol);
 			printf("PR (%d,%d)-(%d,%d) : %d\n", lSolPR[i-1]->solutions[0]->p1, lSolPR[i-1]->solutions[0]->p2, lSolPR[i-1]->solutions[lSolPR[i-1]->nbSol-1]->p1, lSolPR[i-1]->solutions[lSolPR[i-1]->nbSol-1]->p2, LB = meilleureBorne(lSolPR[i-1], p));
 			printf("LB (%d,%d)-(%d,%d) : %d\n", lSolLB->solutions[0]->p1, lSolLB->solutions[0]->p2, lSolLB->solutions[lSolLB->nbSol-1]->p1, lSolLB->solutions[lSolLB->nbSol-1]->p2, LB = meilleureBorne(lSolLB, p));
-			printf("\n");
+			printf("\n");*/
 
 			trierIndvar(p);
 
@@ -255,8 +256,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("A1.DAT");
+	//Probleme *p = genererProblemeGautier("instance100.DAT");
+	Probleme *p = genererProbleme("ZTL105.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);
