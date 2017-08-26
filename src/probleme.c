@@ -486,7 +486,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 		// Si la borne supérieure de la solution optimale n'atteint pas LB
 		if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
 			// On force la variable à 0, donc on la retire du problème
-			//printf("FIXATION 0 PAR 1\n");
+			//printf("FIXATION 0 PAR LB\n");
 			p->nBis -= 1;
 			for (int j = i; j < p->nBis; ++j) {
 				p->indVar[j] = p->indVar[j+1];
@@ -508,7 +508,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 			}
 			// Si la borne supérieure de la solution optimale n'atteint pas LB
 			if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min < LB) {
-				//printf("FIXATION 1 PAR 1\n");
+				//printf("FIXATION 1 PAR LB\n");
 				++nb1;
 				// On force la variable à 1, donc on la retire du problème
 				p->varFix1[p->nVarFix1] = indI;
@@ -550,7 +550,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 				rel0P2 = s2->z1 + p->z2min;
 
 				if (rel0P2 + p->profits2[indI] < y2) {
-					//printf("FIXATION 0 PAR 2\n");
+					//printf("FIXATION 0 PAR Z2\n");
 					p->nBis -= 1;
 					for (int j = i; j < p->nBis; ++j) {
 						p->indVar[j] = p->indVar[j+1];
@@ -574,8 +574,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 
 					// Si la borne supérieure de la solution optimale n'atteint pas le triangle
 					if (rel1P2 < y2) {
-
-						//printf("FIXATION 1 PAR 1\n");
+						//printf("FIXATION 1 PAR Z2\n");
 						++nb1;
 						// On fixe la variable à 1, donc on la retire du problème
 						p->varFix1[p->nVarFix1] = indI;
@@ -589,7 +588,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							p->indVar[j] = p->indVar[j+1];
 						}
 					} else {
-						// ------------------------------------------------ 2ème cas, on teste selon Z2
+						// ------------------------------------------------ 3ème cas, on teste selon Z1
 						// ------------------------- On fixe la variable à 0
 						free(s2->tab);
 						free(s2);
@@ -615,29 +614,83 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 						rel0P1 = s2->z1 + p->z1min;
 
 						if (rel0P1 + p->profits1[indI] < y1) {
-							printf("FIXATION 0 PAR 3\n");
+							//printf("FIXATION 0 PAR Z1\n");
 							p->nBis -= 1;
 							for (int j = i; j < p->nBis; ++j) {
 								p->indVar[j] = p->indVar[j+1];
 							}
 							++nb0;
 						} else {
-							// On regarde si le point idéal est dominé par un point du path relinking
-							int k = 0;
-							int nbSol = lSolHeur->nbSol;
-							Solution **solsHeur = lSolHeur->solutions;
-							while ((k < nbSol) && ((rel0P1 > solsHeur[k]->p1) || (rel0P2 > solsHeur[k]->p2))) {
-								++k;	
+							// ------------------------- On fixe la variable à 0
+							d.omega1 = p->omega1 - p->w1min;
+							d.omega2 = p->omega2 - p->w2min;
+
+							ret = initDichoMu(&s1,&s2,&d);
+							if (ret == 0) {
+								startDichoMu(&s1,&s2,&d);
 							}
-							if (k < nbSol) {
-								printf("FIXATION 0 PAR 4\n");
+
+							if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+								free(s2);
+								s2 = s1;
+							}
+							rel1P1 = s2->z1 + p->z1min + p->profits1[indI];
+
+							// Si la borne supérieure de la solution optimale n'atteint pas le triangle
+							if (rel1P1 < y1) {
+								//printf("FIXATION 1 PAR Z1\n");
+								++nb1;
+								// On fixe la variable à 1, donc on la retire du problème
+								p->varFix1[p->nVarFix1] = indI;
+								p->nVarFix1 += 1;
+								p->z1min += p->profits1[indI];
+								p->z2min += p->profits2[indI];
+								p->w1min += p->weights1[indI];
+								p->w2min += p->weights2[indI];
 								p->nBis -= 1;
 								for (int j = i; j < p->nBis; ++j) {
 									p->indVar[j] = p->indVar[j+1];
 								}
-								++nb0;
 							} else {
-								++i;
+								// ------------------------------------------------ 4ème cas, on teste si le point idéal est dominé
+								// ------------------------- On fixe la variable à 0
+								int k = 0;
+								int nbSol = lSolHeur->nbSol;
+								Solution **solsHeur = lSolHeur->solutions;
+								while ((k < nbSol) && ((rel0P1 > solsHeur[k]->p1) || (rel0P2 > solsHeur[k]->p2))) {
+									++k;	
+								}
+								if (k < nbSol) {
+									//printf("FIXATION 0 PAR 4\n");
+									p->nBis -= 1;
+									for (int j = i; j < p->nBis; ++j) {
+										p->indVar[j] = p->indVar[j+1];
+									}
+									++nb0;
+								} else {
+									k = 0;
+									while ((k < nbSol) && ((rel1P1 > solsHeur[k]->p1) || (rel1P2 > solsHeur[k]->p2))) {
+										++k;	
+									}
+									if (k < nbSol) {
+										//printf("FIXATION 0 PAR 4\n");
+										++nb1;
+										// On fixe la variable à 1, donc on la retire du problème
+										p->varFix1[p->nVarFix1] = indI;
+										p->nVarFix1 += 1;
+										p->z1min += p->profits1[indI];
+										p->z2min += p->profits2[indI];
+										p->w1min += p->weights1[indI];
+										p->w2min += p->weights2[indI];
+										p->nBis -= 1;
+										for (int j = i; j < p->nBis; ++j) {
+											p->indVar[j] = p->indVar[j+1];
+										}
+									} else {
+										++i;
+									}
+								}
+								// ------------------------- On fixe la variable à 1
 							}
 						}
 					}
@@ -663,7 +716,6 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	free(d.w2);
 	printf("nb0=%d\n", nb0);
 	printf("nb1=%d\n", nb1);
-	printf("\n");
 	//printf("nbNull=%d\n", nbNull);
 
 
