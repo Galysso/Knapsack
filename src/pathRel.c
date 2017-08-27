@@ -96,11 +96,11 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 				assert(sw2 == lSolComp->solutions[k]->w2);
 				printf("[%d,%d][%d,%d]\n", sw1, sw2, p->omega1 + p->w1min, p->omega2 + p->w2min);
 				assert(sw1 - p->w1min <= p->omega1);
-				assert(sw2 - p->w2min <= p->omega2);
+				assert(sw2 - p->w2min <= p->omega2);*/
 
 				if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
 					free(lSolComp->solutions[k]);
-				}*/
+				}
 			}
 			free(lSolComp->solutions);
 			free(lSolComp);
@@ -115,7 +115,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			int bestJ2 = -1;
 			int indV;
 			int j = 0;
-			int nDegr = 1;
+			int nDegr = 2;
 
 			while ((nDegr > 0) && (j < n) && (bestJ2 == -1)) {
 				indV = p->indVar[j];
@@ -148,7 +148,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 
 
 
-			while ((profondeur != -1) && (sum < 0)) {
+			while ((profondeur != -1) && (sum < 500)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;

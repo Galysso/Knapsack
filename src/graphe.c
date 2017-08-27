@@ -91,6 +91,20 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			noeudPrec = noeuds[i-1][j];
 			int k = 0;
 			// Si l'objet entre dans le sac alors on cherche à ajouter le noeud correspondant
+
+
+
+			/*int futurW1 = noeudPrec->w1 + p->weights1[indI];
+			int futurW2 = noeudPrec->w2 + p->weights2[indI];
+			int l = i;
+			bool seraComplet = ((futurW1 + p->wCumul1[i] <= p->omega1) && (futurW2 <= p->omega2));
+			while (seraComplet && (i > 0)) {
+				--i;
+				noeudPrec = 
+			}*/
+
+
+
 			if ((noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2)) {
 				int futurP1 = noeudPrec->w1 + p->weights1[indI];
 				int futurP2 = noeudPrec->w2 + p->weights2[indI];
@@ -117,27 +131,51 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			}
 			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
 			// Alors on crée le noeud
-			if (noeudPrec->val + lambda1*p->pCumul1[i] + lambda2*p->pCumul2[i] >= LB) {		// Future condition ?
-				k = 0;
-				// On regarde si le noeud à ajouter existe déjà
-				while ((k < nb) && ((noeuds[i][k]->w1 != noeudPrec->w1) || (noeuds[i][k]->w2 != noeudPrec->w2))) {
-					++k;
-				}
-				// S'il n'existe pas on le crée
-				if (k == nb) {
-					noeuds[i][nb] = creerNoeudSansAjout(noeudPrec);
-					++nb;
-				} else {
-					noeud = noeuds[i][k];
-					// S'il existe et que le noeud précédent est meilleur on le modifie
-					if (noeud->val < noeudPrec->val) {
-						modifierNoeudSansAjout(noeud, noeudPrec);
-					// Sinon on ajoute le noeud précédent en alternatif
-					} else {
-						noeud->precAlt = noeudPrec;
+			if ((noeudPrec->val + lambda1*p->pCumul1[i] + lambda2*p->pCumul2[i] >= LB)
+			&& ((noeudPrec->w1 + p->wCumul1[i-1] > p->omega1) || (noeudPrec->w2 + p->wCumul2[i-1] > p->omega2))) {		// Future condition ?
+				
+
+
+				/*int futurW1 = noeudPrec->w1 + p->wCumul1[i];
+				int futurW2 = noeudPrec->w2 + p->wCumul2[i];
+				int l = i-1;
+				bool ajout = true;
+				Noeud *nCourant = noeudPrec;
+				if ((futurW1 + p->weights1[indI] > p->omega1) || (futurW2 + p->weights2[indI] > p->omega2)) {
+					while (ajout && (l > 0)) {
+						--l;
+						if ((nCourant->precBest->val == nCourant->val) && (futurW1 + p->weights1[p->indVar[l]] <= p->omega1) && (futurW1 + p->weights2[p->indVar[l]] <= p->omega2)) {
+							ajout = false;
+						}
+						nCourant = nCourant->precBest;
 					}
-					noeud->existeAlt = true;
-					noeud->ajoutForce = noeudPrec->ajoutForce;
+				}*/
+
+
+
+
+				if (true) {
+					k = 0;
+					// On regarde si le noeud à ajouter existe déjà
+					while ((k < nb) && ((noeuds[i][k]->w1 != noeudPrec->w1) || (noeuds[i][k]->w2 != noeudPrec->w2))) {
+						++k;
+					}
+					// S'il n'existe pas on le crée
+					if (k == nb) {
+						noeuds[i][nb] = creerNoeudSansAjout(noeudPrec);
+						++nb;
+					} else {
+						noeud = noeuds[i][k];
+						// S'il existe et que le noeud précédent est meilleur on le modifie
+						if (noeud->val < noeudPrec->val) {
+							modifierNoeudSansAjout(noeud, noeudPrec);
+						// Sinon on ajoute le noeud précédent en alternatif
+						} else {
+							noeud->precAlt = noeudPrec;
+						}
+						noeud->existeAlt = true;
+						noeud->ajoutForce = noeudPrec->ajoutForce;
+					}
 				}
 			}
 		}

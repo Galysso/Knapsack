@@ -247,6 +247,12 @@ ListeSol *trouverSolutions(Probleme *p) {
 	//printf("COCO\n");
 	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
+	for (int i = 0; i < lSolSup->nbSol-1; ++i) {
+		for (int j = 0; j < lSolPR[i]->nbSol; ++j) {
+			ajouterSolutionDom(resultat, lSolPR[i]->solutions[j]);
+		}
+	}
+
 
 	plotAll(lSolSup, resultat);
 
@@ -256,8 +262,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("ZTL105.DAT");
+	//Probleme *p = genererProblemeGautier("instance100.DAT");
+	Probleme *p = genererProbleme("ZTL105.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);
