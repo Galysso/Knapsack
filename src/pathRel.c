@@ -21,6 +21,9 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 
 	Solution *X = copierSolution(initSol, n);
 
+	ajouterSolutionDom(lSolAdm, initSol);
+	ajouterSolutionDom(lSolAdm, guidingSol);
+
 	while (hd > 0) {
 		int bestI;
 		int delta;
@@ -76,28 +79,6 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			Solution *Xc = copierSolution(X, n);
 			lSolComp = completions(Xc, p);
 			for (int k = 0; k < lSolComp->nbSol; ++k) {
-
-				int sp1 = p->z1min;
-				int sp2 = p->z2min;
-				int sw1 = p->w1min;
-				int sw2 = p->w2min;
-				for (int o = 0; o < p->n; ++o) {
-					if (lSolComp->solutions[k]->var[o]) {
-						sp1 += p->profits1[o];
-						sp2 += p->profits2[o];
-						sw1 += p->weights1[o];
-						sw2 += p->weights2[o];
-					}
-				}
-				/*printf("sp1=%d\tp1=%d\n", sp1, lSolComp->solutions[k]->p1);
-				assert(sp1 == lSolComp->solutions[k]->p1);
-				assert(sp2 == lSolComp->solutions[k]->p2);
-				assert(sw1 == lSolComp->solutions[k]->w1);
-				assert(sw2 == lSolComp->solutions[k]->w2);
-				printf("[%d,%d][%d,%d]\n", sw1, sw2, p->omega1 + p->w1min, p->omega2 + p->w2min);
-				assert(sw1 - p->w1min <= p->omega1);
-				assert(sw2 - p->w2min <= p->omega2);*/
-
 				if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
 					free(lSolComp->solutions[k]);
 				}
@@ -148,7 +129,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 
 
 
-			while ((profondeur != -1) && (sum < 500)) {
+			while ((profondeur != -1) && (sum < 50)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;

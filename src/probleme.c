@@ -64,6 +64,7 @@ bool ajouterSolutionDom(ListeSol *lSol, Solution *sol) {
 		solCourante = solutions[j];		
 		if ((sol->p1 > solCourante->p1) && (sol->p2 > solCourante->p2)) {
 			--nbSol;
+			free(solutions[j]);
 			solutions[j] = solutions[nbSol];
 		} else if ((sol->p1 <= solCourante->p1) && (sol->p2 <= solCourante->p2)) {
 			estDomine = true;
@@ -175,6 +176,10 @@ void trierIndvar(Probleme *p) {
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
 	int indJ1, indJ2;
+
+	for (int i = 0; i < p->n; ++i) {
+		p->indVar[i] = i;
+	}
 
 	do {
 		changement = false;
@@ -431,9 +436,13 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	nb0 = 0;
 	nb1 = 0;
 
-	for (int i = 0; i < p->n; ++i) {
+	/*for (int i = 0; i < p->n; ++i) {
+		printf("i=%d\n", p->indVar[i]);
+	}*/
+
+	/*for (int i = 0; i < p->n; ++i) {
 		p->indVar[i] = i;
-	}
+	}*/
 
 	p->nBis = p->n;
 	d.nbItem = p->nBis-1;
@@ -444,32 +453,8 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	p->z2min = 0;
 	p->w1min = 0;
 	p->w2min = 0;
+
 	// Tant que tous les items n'ont pas été testés
-
-
-
-				
-				/*p->varFix1[p->nVarFix1] = 5;
-				p->nVarFix1 += 1;
-				p->z1min += p->profits1[5];
-				p->z2min += p->profits2[5];
-				p->w1min += p->weights1[5];
-				p->w2min += p->weights2[5];
-				int k = 0;
-				p->nBis -= 1;
-				while (p->indVar[k] != 5) {
-					++k;
-				}
-				for (int j = k; j < p->nBis; ++j) {
-					p->indVar[j] = p->indVar[j+1];
-				}*/
-				
-
-				//++nb0;
-
-
-
-
 	while (i < p->nBis) {
 		// ------------------------------------------------ 1er cas, on teste selon lambda1*Z1 + lambda2*Z2
 		// ------------------------- On fixe la variable à 1
@@ -498,19 +483,26 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 		}
 
 		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+			/*if (s2->tab != NULL) {
+				free(s2->tab);
+			}*/
 			free(s2);
 			s2 = s1;
 		}
 		// Si la borne supérieure de la solution optimale n'atteint pas LB
 		if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
 			// On force la variable à 0, donc on la retire du problème
-			printf("FIXATION 0 PAR LB\n");
+			//printf("FIXATION 0 PAR LB\n");
 			p->nBis -= 1;
 			for (int j = i; j < p->nBis; ++j) {
 				p->indVar[j] = p->indVar[j+1];
 			}
 			++nb0;
 		} else {
+			/*if (s2->tab != NULL) {
+				free(s2->tab);
+			}
+			free(s2);*/
 			// ------------------------- On fixe la variable à 0
 			d.omega1 = p->omega1 - p->w1min;
 			d.omega2 = p->omega2 - p->w2min;
@@ -521,12 +513,15 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 			}
 
 			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+				/*if (s2->tab != NULL) {
+					free(s2->tab);
+				}*/
 				free(s2);
 				s2 = s1;
 			}
 			// Si la borne supérieure de la solution optimale n'atteint pas LB
 			if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min < LB) {
-				printf("FIXATION 1 PAR LB\n");
+				//printf("FIXATION 1 PAR LB\n");
 				++nb1;
 				// On force la variable à 1, donc on la retire du problème
 				p->varFix1[p->nVarFix1] = indI;
@@ -540,12 +535,14 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					p->indVar[j] = p->indVar[j+1];
 				}
 			} else {
+				/*if (s2->tab != NULL) {
+					free(s2->tab);
+				}
+				free(s2);*/
 				// ------------------------------------------------ 2ème cas, on teste selon Z2
 				// ------------------------- On fixe la variable à 1
 				d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
 				d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
-				free(s2->tab);
-				free(s2);
 				for (int j = 0; j < i; ++j) {
 					d.p1[j] = p->profits2[p->indVar[j]];
 				}
@@ -562,6 +559,9 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					++nbNull;
 				}
 				if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+					/*if (s2->tab != NULL) {
+						free(s2->tab);
+					}*/
 					free(s2);
 					s2 = s1;
 				}
@@ -575,6 +575,10 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					}
 					++nb0;
 				} else {
+					/*if (s2->tab != NULL) {
+						free(s2->tab);
+					}
+					free(s2);*/
 					// ------------------------- On fixe la variable à 0
 					d.omega1 = p->omega1 - p->w1min;
 					d.omega2 = p->omega2 - p->w2min;
@@ -585,6 +589,9 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					}
 
 					if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+						/*if (s2->tab != NULL) {
+							free(s2->tab);
+						}*/
 						free(s2);
 						s2 = s1;
 					}
@@ -606,10 +613,12 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							p->indVar[j] = p->indVar[j+1];
 						}
 					} else {
+						/*if (s2->tab != NULL) {
+							free(s2->tab);
+						}
+						free(s2);*/
 						// ------------------------------------------------ 3ème cas, on teste selon Z1
 						// ------------------------- On fixe la variable à 0
-						free(s2->tab);
-						free(s2);
 						for (int j = 0; j < i; ++j) {
 							d.p1[j] = p->profits1[p->indVar[j]];
 						}
@@ -626,6 +635,9 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							++nbNull;
 						}
 						if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+							/*if (s2->tab != NULL) {
+								free(s2->tab);
+							}*/
 							free(s2);
 							s2 = s1;
 						}
@@ -639,6 +651,10 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							}
 							++nb0;
 						} else {
+							/*if (s2->tab != NULL) {
+								free(s2->tab);
+							}
+							free(s2);*/
 							// ------------------------- On fixe la variable à 0
 							d.omega1 = p->omega1 - p->w1min;
 							d.omega2 = p->omega2 - p->w2min;
@@ -649,6 +665,9 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							}
 
 							if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+								/*if (s2->tab != NULL) {
+									free(s2->tab);
+								}*/
 								free(s2);
 								s2 = s1;
 							}
@@ -670,6 +689,10 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 									p->indVar[j] = p->indVar[j+1];
 								}
 							} else {
+								/*if (s2->tab != NULL) {
+									free(s2->tab);
+								}
+								free(s2);*/
 								// ------------------------------------------------ 4ème cas, on teste si le point idéal est dominé
 								// ------------------------- On fixe la variable à 0
 								int k = 0;
@@ -719,10 +742,10 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 		//getchar();
 
 		// Libération mémoire
-		if (s2->tab != NULL) {
+		/*if (s2->tab != NULL) {
 			free(s2->tab);
 		}
-		free(s2);
+		free(s2);*/
 	}
 
 	/*for (int j = 0; j <= p->nBis; ++j) {

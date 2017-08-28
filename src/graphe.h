@@ -42,5 +42,6 @@ void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec);
 void desallouerGraphe(int *nSol, Noeud ***noeud, int n);
 void afficherChemin(Chemin *sol, int n);
 void afficherGraphe(Noeud *racine, int n);
+void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout);
 
 #endif
