@@ -325,7 +325,7 @@ void startDichoMu(solution **s1, solution **s2, donnees *d)
 	{
 		computeMult(*s1,*s2,&mult1,&mult2); // On détermine un multiplicateur entre les deux SI
 		s = (solution *) malloc (sizeof(solution));
-		s->tab = (int *) malloc ((d->nbItem) * sizeof(int)); 
+		s->tab = (int *) malloc ((d->nbItem) * sizeof(int));
 		singleOpt(mult1,mult2,d,s); // résolution
 		s->mult1 = mult1;
 		s->mult2 = mult2;

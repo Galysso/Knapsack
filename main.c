@@ -270,8 +270,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 int main() {
 	clock_t debut, fin;
 
-	Probleme *p = genererProblemeGautier("instance100.DAT");
-	//Probleme *p = genererProbleme("ZTL105.DAT");
+	//Probleme *p = genererProblemeGautier("instance100.DAT");
+	Probleme *p = genererProbleme("A1.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);

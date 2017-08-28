@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
 
 Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec) {
 	Noeud *nouveau = (Noeud *) malloc(sizeof(Noeud));
@@ -58,44 +59,69 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 	*bAjout = (noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2);
 	*bSansAjout = (noeudPrec->val + p->lambda1*p->pCumul1[i-1] + p->lambda2*p->pCumul2[i-1] >= p->LB);
 
-	if (*bAjout) {
-		solution *s1, *s2;
-		int ret;
-		donnees d;
-
-		d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
-		d.w1 = (itype *) malloc ((p->n) * sizeof(itype));
-		d.w2 = (itype *) malloc ((p->n) * sizeof(itype));
-		d.maxZ1 = 0;
-		d.nbItem = p->nBis-i;
-
-		// On fixe la variable à 1
-		d.omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
-		d.omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
-
-		//printf("p->omega1 = %d\n", p->omega1);
+	donnees *d;
+	solution *s1, *s2;
+	int ret;
+	if (*bAjout || *bSansAjout) {
+		d = (donnees *) malloc(sizeof(donnees));
+		d->nbItem = p->nBis-i;
+		d->p1 = (itype *) malloc ((d->nbItem) * sizeof(itype));
+		d->w1 = (itype *) malloc ((d->nbItem) * sizeof(itype));
+		d->w2 = (itype *) malloc ((d->nbItem) * sizeof(itype));
+		d->maxZ1 = 0;
 
 		for (int j = i; j < p->nBis; ++j) {
 			int indJ = p->indVar[j];
-			d.p1[j] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
-			d.w1[j] = p->weights1[indJ];
-			d.w2[j] = p->weights2[indJ];
+			d->p1[j-i] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
+			d->w1[j-i] = p->weights1[indJ];
+			d->w2[j-i] = p->weights2[indJ];
 		}
-		
-		ret = initDichoMu(&s1,&s2,&d);
+	}
+
+	if (*bAjout) {
+		// On fixe la variable à 1
+		d->omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
+		d->omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
+
+		printf("%d objets, capacités résiduelles : (%d,%d)\n", d->nbItem, d->omega1, d->omega2);
+		printf("P1\tW1\tW2\n");
+		for (int i = 0; i < d->nbItem; ++i) {
+			printf("%d\t%d\t%d\n", d->p1[i], d->w1[i], d->w2[i]);
+		}
+
+		//printf("i=%d\tp->nBis=%d\n", i, p->nBis);
+		ret = initDichoMu(&s1,&s2,d);
 		if (ret == 0) {
-			startDichoMu(&s1,&s2,&d);
+			printf("COCO 1\n");
+			startDichoMu(&s1,&s2,d);
+			printf("COCO 2\n");
 		}
-			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
 			free(s2->tab);
 			free(s2);
 			s2 = s1;
 		}
 
-		*bAjout = (s2->z1 + noeudPrec->val + p->lambda1*(p->profits1[indI] + p->z1min) + p->lambda2*(p->profits2[indI] + p->z2min) >= LB);
-		if (!*bAjout) {
-			printf("RETRAIT \n");
+		*bAjout = (s2->z1 + noeudPrec->val + p->lambda1*(p->profits1[indI]) + p->lambda2*(p->profits2[indI]) >= LB);
+	}
+
+	if (*bSansAjout) {
+		d->omega1 = p->omega1 - noeudPrec->w1;
+		d->omega2 = p->omega2 - noeudPrec->w2;
+
+		ret = initDichoMu(&s1,&s2,d);
+		if (ret == 0) {
+			//printf("COCO 1\n");
+			startDichoMu(&s1,&s2,d);
+			//printf("COCO 2\n");
 		}
+		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+			free(s2->tab);
+			free(s2);
+			s2 = s1;
+		}
+
+		*bSansAjout = (s2->z1 + noeudPrec->val >= LB);
 	}
 }
 
@@ -140,6 +166,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 		for (int j = 0; j < nbPrec; ++j) {
 			noeudPrec = noeuds[i-1][j];
 			int k;
+
 			checkGenerationNoeuds(noeudPrec, p, i, &bAjout, &bSansAjout);
 
 			// Si l'objet entre dans le sac alors on cherche à ajouter le noeud correspondant
