@@ -62,7 +62,25 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 	donnees *d;
 	solution *s1, *s2;
 	int ret;
-	if (*bAjout || *bSansAjout) {
+
+	bool toutEntre0 = ((noeudPrec->w1 + p->wCumul1[i] <= p->omega1) && (noeudPrec->w2 + p->wCumul2[i] <= p->omega2));
+	bool toutEntre1 = ((noeudPrec->w1 + p->wCumul1[i-1] + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->wCumul2[i-1] + p->w2min + p->weights2[indI] <= p->omega2));
+	bool unObjetEntre0 = toutEntre0;
+	bool unObjetEntre1 = toutEntre1;
+	int k = i;
+	while (((!unObjetEntre0) || (!unObjetEntre1)) && (k < p->nBis)) {
+		int indK = p->indVar[k];
+		if ((noeudPrec->w1 + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indK]<= p->omega2)) {
+			unObjetEntre0 = true;
+		}
+		if ((noeudPrec->w1 + p->weights1[indI] + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] + p->weights2[indK]<= p->omega2)) {
+			unObjetEntre1 = true;
+		}
+		++k;
+	}
+	
+	
+	if ((*bAjout && unObjetEntre1 && !toutEntre1) || (*bSansAjout && unObjetEntre0 && !toutEntre0)) {
 		d = (donnees *) malloc(sizeof(donnees));
 		d->nbItem = p->nBis-i;
 		d->p1 = (itype *) malloc ((d->nbItem) * sizeof(itype));
@@ -76,52 +94,63 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 			d->w1[j-i] = p->weights1[indJ];
 			d->w2[j-i] = p->weights2[indJ];
 		}
+
+		if (*bAjout && unObjetEntre1 && !toutEntre1) {
+			// On fixe la variable à 1
+			d->omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
+			d->omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
+
+			/*printf("%d objets, capacités résiduelles : (%d,%d)\n", d->nbItem, d->omega1, d->omega2);
+			printf("P1\tW1\tW2\n");
+			for (int i = 0; i < d->nbItem; ++i) {
+				printf("%d\t%d\t%d\n", d->p1[i], d->w1[i], d->w2[i]);
+			}*/
+
+			ret = initDichoMu(&s1,&s2,d);
+			if (ret == 0) {
+				startDichoMu(&s1,&s2,d);
+			}
+			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+				free(s2->tab);
+				free(s2);
+				s2 = s1;
+			}
+
+			*bAjout = (s2->z1 + noeudPrec->val + p->lambda1*(p->profits1[indI]) + p->lambda2*(p->profits2[indI]) >= LB);
+		}
+
+		if (*bSansAjout && unObjetEntre0 && !toutEntre0) {
+			d->omega1 = p->omega1 - noeudPrec->w1;
+			d->omega2 = p->omega2 - noeudPrec->w2;
+
+			ret = initDichoMu(&s1,&s2,d);
+			if (ret == 0) {
+				startDichoMu(&s1,&s2,d);
+			}
+			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
+				free(s2->tab);
+				free(s2);
+				s2 = s1;
+			}
+
+			*bSansAjout = (s2->z1 + noeudPrec->val >= LB);
+		}
 	}
 
 	if (*bAjout) {
-		// On fixe la variable à 1
-		d->omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
-		d->omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
-
-		printf("%d objets, capacités résiduelles : (%d,%d)\n", d->nbItem, d->omega1, d->omega2);
-		printf("P1\tW1\tW2\n");
-		for (int i = 0; i < d->nbItem; ++i) {
-			printf("%d\t%d\t%d\n", d->p1[i], d->w1[i], d->w2[i]);
+		if (!unObjetEntre1) {
+			*bAjout = noeudPrec->val + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] >= LB;
+		} else if (toutEntre1) {
+			*bAjout = noeudPrec->val + p->lambda1*p->pCumul1[i-1] + p->lambda2*p->pCumul2[i-1] >= LB;
 		}
-
-		//printf("i=%d\tp->nBis=%d\n", i, p->nBis);
-		ret = initDichoMu(&s1,&s2,d);
-		if (ret == 0) {
-			printf("COCO 1\n");
-			startDichoMu(&s1,&s2,d);
-			printf("COCO 2\n");
-		}
-		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-			free(s2->tab);
-			free(s2);
-			s2 = s1;
-		}
-
-		*bAjout = (s2->z1 + noeudPrec->val + p->lambda1*(p->profits1[indI]) + p->lambda2*(p->profits2[indI]) >= LB);
 	}
 
 	if (*bSansAjout) {
-		d->omega1 = p->omega1 - noeudPrec->w1;
-		d->omega2 = p->omega2 - noeudPrec->w2;
-
-		ret = initDichoMu(&s1,&s2,d);
-		if (ret == 0) {
-			//printf("COCO 1\n");
-			startDichoMu(&s1,&s2,d);
-			//printf("COCO 2\n");
+		if (!unObjetEntre0) {
+			*bSansAjout = noeudPrec->val >= LB;
+		} else if (toutEntre0) {
+			*bSansAjout = noeudPrec->val + p->lambda1*p->pCumul1[i] + p->lambda2*p->pCumul2[i] >= LB;
 		}
-		if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-			free(s2->tab);
-			free(s2);
-			s2 = s1;
-		}
-
-		*bSansAjout = (s2->z1 + noeudPrec->val >= LB);
 	}
 }
 

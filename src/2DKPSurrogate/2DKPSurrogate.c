@@ -14,6 +14,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <stdbool.h>
 
 #define SIZEMAX 500
 
@@ -426,27 +427,27 @@ int initDichoMu1Sol(solution **s1,solution **s2,donnees *d)
 
 int initDichoMu(solution **s1, solution **s2, donnees *d)
 {
-	if (d->nbItem > 0) {
-		long long mult1 = 1;
-		long long mult2 = 1;
+	
+	long long mult1 = 1;
+	long long mult2 = 1;
 
-		// Détermination de la solution initiale de la dichotomie
-		*s2 = (solution *) malloc (sizeof(solution));
-		(*s2)->tab = (int *) malloc ((d->nbItem) * sizeof(int)); 
-		singleOpt(mult1,mult2,d,*s2);
-		(*s2)->mult1 = mult1;
-		(*s2)->mult2 = mult2;
-		computeSI(d,*s2); // Détermination Intervalle de stabilité
+	// Détermination de la solution initiale de la dichotomie
+	*s2 = (solution *) malloc (sizeof(solution));
+	(*s2)->tab = (int *) malloc ((d->nbItem) * sizeof(int)); 
+	singleOpt(mult1,mult2,d,*s2);
+	(*s2)->mult1 = mult1;
+	(*s2)->mult2 = mult2;
+	computeSI(d,*s2); // Détermination Intervalle de stabilité
 
-		return initDichoMu1Sol(s1,s2,d);
-	} else {
+	return initDichoMu1Sol(s1,s2,d);
+	/*} else {
 		(*s1) = NULL;
 		(*s2) = (solution *) malloc (sizeof(solution));
 		(*s2)->tab = NULL;
 		(*s2)->z1 = 0;
 
 		return 1;
-	}
+	}*/
 }
 
 

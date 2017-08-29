@@ -36,6 +36,11 @@ struct Probleme {
 	int lambda2;
 	int LB;
 
+	int sumW1;
+	int sumW2;
+	int sumP1;
+	int sumP2;
+
 	int *pCumul1;
 	int *pCumul2;
 	int *wCumul1;
