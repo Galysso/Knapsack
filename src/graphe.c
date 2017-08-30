@@ -55,9 +55,138 @@ void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec) {
 
 void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout) {
 	int indI = p->indVar[i-1];
-	int LB = p->LB;
 	*bAjout = (noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2);
-	*bSansAjout = (noeudPrec->val + p->lambda1*p->pCumul1[i-1] + p->lambda2*p->pCumul2[i-1] >= p->LB);
+	*bSansAjout = (noeudPrec->val + p->lambda1*p->pCumul1[i] + p->lambda2*p->pCumul2[i] >= p->LB);
+
+	if (*bAjout || *bSansAjout) {
+		int profit;
+		int lambda1 = p->lambda1;
+		int lambda2 = p->lambda2;
+		int LB = p->LB;
+		bool toDelete = false;
+
+		solution *s1, *s2;
+		int ret;
+		donnees d;
+		d.maxZ1 = 0;
+
+		// On teste les cas triviaux pour lesquels dual-surrogate plante
+		bool toutEntre0 = ((noeudPrec->w1 + p->wCumul1[i] <= p->omega1) && (noeudPrec->w2 + p->wCumul2[i] <= p->omega2));
+		bool toutEntre1 = ((noeudPrec->w1 + p->wCumul1[i-1] + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->wCumul2[i-1] + p->w2min + p->weights2[indI] <= p->omega2));
+		bool unObjetEntre0 = toutEntre0;
+		bool unObjetEntre1 = toutEntre1;
+		int k = i;
+		while (((!unObjetEntre0) || (!unObjetEntre1)) && (k < p->nBis)) {
+			int indK = p->indVar[k];
+			if ((noeudPrec->w1 + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indK]<= p->omega2)) {
+				unObjetEntre0 = true;
+			}
+			if ((noeudPrec->w1 + p->weights1[indI] + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] + p->weights2[indK] <= p->omega2)) {
+				unObjetEntre1 = true;
+			}
+			++k;
+		}
+
+		// vrai si on peut éxecuter surrogate en fixant l'objet indI à 0
+		bool execSurr0 = unObjetEntre0 && !toutEntre0;
+		// vrai si on peut exécuter surrogate en fixant l'objet indI à 1
+		bool execSurr1 = unObjetEntre1 && !toutEntre1;
+
+		// -------------------------------------- ON COMPARE AVEC LB (z*lambda)
+		if ((*bAjout && execSurr1) || (*bSansAjout && execSurr0)) {
+			toDelete = true;
+			d.nbItem = p->nBis - i;
+			d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
+			d.w1 = (itype *) malloc ((p->n) * sizeof(itype));
+			d.w2 = (itype *) malloc ((p->n) * sizeof(itype));
+			for (int j = i; j < p->nBis; ++j) {
+				d.w1[j-i] = p->weights1[p->indVar[j]];
+				d.w2[j-i] = p->weights2[p->indVar[j]];
+				d.p1[j-i] = lambda1*p->profits1[p->indVar[j]] + lambda2*p->profits2[p->indVar[j]];
+			}
+		}
+
+		// -------------------------------------- ON FIXE LA VARIABLE INDI A 1
+		if (*bAjout) {
+			if (execSurr1) {
+				//printf("OUI\n");
+				d.omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
+				d.omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
+
+				ret = initDichoMu(&s1,&s2,&d);
+				if (ret == 0) {
+					startDichoMu(&s1,&s2,&d);
+				}
+				if (s1 != NULL) {
+					if (s1->z1 < s2->z1) {
+						free(s2->tab);
+						free(s2);
+						s2 = s1;
+					} else {
+						free(s1->tab);
+						free(s1);
+					}
+				}
+				profit = s2->z1 + noeudPrec->val + lambda1*p->profits1[indI] + lambda2*p->profits2[indI];
+				free(s2->tab);
+				free(s2);
+			} else {
+				if (!unObjetEntre1) {
+					profit = noeudPrec->val + lambda1*p->profits1[indI] + lambda2*p->profits2[indI];
+				} else if (toutEntre1) {
+					profit = noeudPrec->val + lambda1*p->pCumul1[i-1] + lambda2*p->pCumul2[i-1];
+				}
+			}
+
+			*bAjout = (profit >= LB);
+		}
+
+		// -------------------------------------- ON FIXE LA VARIABLE INDI A 0
+
+		if (*bSansAjout) {
+			if (execSurr0) {
+				d.omega1 = p->omega1 - noeudPrec->w1;
+				d.omega2 = p->omega2 - noeudPrec->w2;
+
+				ret = initDichoMu(&s1,&s2,&d);
+				if (ret == 0) {
+					startDichoMu(&s1,&s2,&d);
+				}
+				if (s1 != NULL) {
+					if (s1->z1 < s2->z1) {
+						free(s2->tab);
+						free(s2);
+						s2 = s1;
+					} else {
+						free(s1->tab);
+						free(s1);
+					}
+				}
+				profit = s2->z1 + noeudPrec->val;
+				free(s2->tab);
+				free(s2);
+			} else if (!unObjetEntre0) {
+				profit = noeudPrec->val;
+			} else if (toutEntre0) {
+				profit = noeudPrec->val + lambda1*p->pCumul1[i] + lambda2*p->pCumul2[i];
+			}
+			*bSansAjout = (profit >= LB);
+		}
+
+		if (toDelete) {
+			free(d.p1);
+			free(d.w1);
+			free(d.w2);
+		}
+	}
+}
+
+/*void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout) {
+	int indI = p->indVar[i-1];
+	int LB = p->LB;
+	int profit;
+	*bAjout = (noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2);
+	*bSansAjout = (noeudPrec->val + p->lambda1*p->pCumul1[i] + p->lambda2*p->pCumul2[i] >= p->LB);
 
 	donnees *d;
 	solution *s1, *s2;
@@ -68,15 +197,17 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 	bool unObjetEntre0 = toutEntre0;
 	bool unObjetEntre1 = toutEntre1;
 	int k = i;
-	while (((!unObjetEntre0) || (!unObjetEntre1)) && (k < p->nBis)) {
-		int indK = p->indVar[k];
-		if ((noeudPrec->w1 + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indK]<= p->omega2)) {
-			unObjetEntre0 = true;
+	if (*bAjout || *bSansAjout) {
+		while (((!unObjetEntre0) || (!unObjetEntre1)) && (k < p->nBis)) {
+			int indK = p->indVar[k];
+			if ((noeudPrec->w1 + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indK]<= p->omega2)) {
+				unObjetEntre0 = true;
+			}
+			if ((noeudPrec->w1 + p->weights1[indI] + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] + p->weights2[indK]<= p->omega2)) {
+				unObjetEntre1 = true;
+			}
+			++k;
 		}
-		if ((noeudPrec->w1 + p->weights1[indI] + p->weights1[indK] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] + p->weights2[indK]<= p->omega2)) {
-			unObjetEntre1 = true;
-		}
-		++k;
 	}
 	
 	
@@ -100,23 +231,25 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 			d->omega1 = p->omega1 - noeudPrec->w1 - p->weights1[indI];
 			d->omega2 = p->omega2 - noeudPrec->w2 - p->weights2[indI];
 
-			/*printf("%d objets, capacités résiduelles : (%d,%d)\n", d->nbItem, d->omega1, d->omega2);
-			printf("P1\tW1\tW2\n");
-			for (int i = 0; i < d->nbItem; ++i) {
-				printf("%d\t%d\t%d\n", d->p1[i], d->w1[i], d->w2[i]);
-			}*/
-
 			ret = initDichoMu(&s1,&s2,d);
 			if (ret == 0) {
 				startDichoMu(&s1,&s2,d);
 			}
-			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-				free(s2->tab);
-				free(s2);
-				s2 = s1;
+			if (s1 != NULL) {
+				if (s1->z1 < s2->z1) {
+					free(s2->tab);
+					free(s2);
+					s2 = s1;
+				} else {
+					free(s1->tab);
+					free(s1);
+				}
 			}
+			profit = s2->z1;
+			free(s2->tab);
+			free(s2);
 
-			*bAjout = (s2->z1 + noeudPrec->val + p->lambda1*(p->profits1[indI]) + p->lambda2*(p->profits2[indI]) >= LB);
+			*bAjout = (profit + noeudPrec->val + p->lambda1*(p->profits1[indI]) + p->lambda2*(p->profits2[indI]) >= LB);
 		}
 
 		if (*bSansAjout && unObjetEntre0 && !toutEntre0) {
@@ -127,14 +260,25 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 			if (ret == 0) {
 				startDichoMu(&s1,&s2,d);
 			}
-			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-				free(s2->tab);
-				free(s2);
-				s2 = s1;
+			if (s1 != NULL) {
+				if (s1->z1 < s2->z1) {
+					free(s2->tab);
+					free(s2);
+					s2 = s1;
+				} else {
+					free(s1->tab);
+					free(s1);
+				}
 			}
+			profit = s2->z1;
+			free(s2->tab);
+			free(s2);
 
-			*bSansAjout = (s2->z1 + noeudPrec->val >= LB);
+			*bSansAjout = (profit + noeudPrec->val >= LB);
 		}
+		free(d->p1);
+		free(d->w1);
+		free(d->w2);
 	}
 
 	if (*bAjout) {
@@ -152,7 +296,7 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 			*bSansAjout = noeudPrec->val + p->lambda1*p->pCumul1[i] + p->lambda2*p->pCumul2[i] >= LB;
 		}
 	}
-}
+}*/
 
 Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) {
 	Noeud ***noeuds;
@@ -272,7 +416,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 		// On réalloue la colonne en fonction du nombre exact de noeuds créés
 		noeuds[i] = realloc(noeuds[i], nb*sizeof(Noeud));
 		(*nSol)[i] = nb;
-		printf("nb=%d\n",nb);
+		printf("(%d) nb=%d\n", i, nb);
 	}
 
 	return noeuds;
@@ -342,6 +486,7 @@ void afficherChemin(Chemin *chem, int n) {
 			--n;
 			--nDev;
 		}
+		free(deviations);
 	} else {
 		noeud = (Noeud*) chem->chemin;
 	}

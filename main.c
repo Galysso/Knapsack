@@ -222,6 +222,7 @@ ListeSol *trouverSolutions(Probleme *p) {
 
 			fixer01(p, solSup1->p1, solSup2->p2, lSolPR[i-1]);
 
+			printf("triangle %d/%d\n", i, lSolSup->nbSol-1);
 			if (p->nBis > 0) {
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
 				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
@@ -246,7 +247,6 @@ ListeSol *trouverSolutions(Probleme *p) {
 					}
 					genererSolutions(chem, tas, p);
 				}
-
 				desallouerGraphe(nNoeuds, graphe, p->nBis+1);
 			}
 		}
@@ -271,7 +271,7 @@ int main() {
 	clock_t debut, fin;
 
 	//Probleme *p = genererProblemeGautier("instance100.DAT");
-	Probleme *p = genererProbleme("A4.DAT");
+	Probleme *p = genererProbleme("ZTL250.DAT");
 
 	debut = clock();
 	ListeSol *resultat = trouverSolutions(p);

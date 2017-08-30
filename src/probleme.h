@@ -71,6 +71,8 @@ bool ajouterSolutionDom(ListeSol *lSol, Solution *sol);
 bool estComplete(Solution *solution, Probleme *p);
 void completerGlouton(Solution *sol, Probleme *p);
 ListeSol *completions(Solution *sol, Probleme *p);
+void fixerVar0(Probleme *p, int i);
+void fixerVar1(Probleme *p, int i);
 // Trie les valeurs de indVar dans l'ordre décroissant selon le profit des objets dans la somme pondérée
 void trierIndvar(Probleme *p);		// TRIBULLE A PASSER EN TRI EN O(n*log(n))
 void calculerProfitsCumules(Probleme *p);

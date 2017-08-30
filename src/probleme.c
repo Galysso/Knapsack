@@ -64,6 +64,7 @@ bool ajouterSolutionDom(ListeSol *lSol, Solution *sol) {
 		solCourante = solutions[j];		
 		if ((sol->p1 > solCourante->p1) && (sol->p2 > solCourante->p2)) {
 			--nbSol;
+			free(solutions[j]->var);
 			free(solutions[j]);
 			solutions[j] = solutions[nbSol];
 		} else if ((sol->p1 <= solCourante->p1) && (sol->p2 <= solCourante->p2)) {
@@ -139,11 +140,13 @@ ListeSol *completions(Solution *sol, Probleme *p) {
 	while (profondeur >= 0) {
 		if (i == n) {
 			Solution *solC2 = copierSolution(solC, n);
-			ajouterSolutionDom(lResultat, solC2);
+			if (!ajouterSolutionDom(lResultat, solC2)) {
+				free(solC2->var);
+				free(solC2);
+			}
 			--profondeur;
 			if (profondeur >= 0) {
 				i = lastI[profondeur];
-				assert(solC->var[i]);
 				solC->var[i] = false;
 				solC->w1 -= p->weights1[i];
 				solC->w2 -= p->weights2[i];
@@ -166,6 +169,10 @@ ListeSol *completions(Solution *sol, Probleme *p) {
 			++i;
 		}
 	}
+
+	free(solC->var);
+	free(solC);
+	free(lastI);
 
 	return lResultat;
 }
@@ -424,6 +431,7 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 				var[p->indVar[i]] = true;
 			}
 		}
+		free(deviations);
 	} else {
 		noeudPrec = (Noeud*) chemin->chemin;
 		sol->w1 = noeudPrec->w1;
@@ -444,15 +452,33 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
+void fixerVar0(Probleme *p, int i) {
+	p->nBis -= 1;
+	for (int j = i; j < p->nBis; ++j) {
+		p->indVar[j] = p->indVar[j+1];
+	}
+}
+
+void fixerVar1(Probleme *p, int i) {
+	int indI = p->indVar[i];
+	p->varFix1[p->nVarFix1] = indI;
+	p->nVarFix1 += 1;
+	p->z1min += p->profits1[indI];
+	p->z2min += p->profits2[indI];
+	p->w1min += p->weights1[indI];
+	p->w2min += p->weights2[indI];
+	p->nBis -= 1;
+	for (int j = i; j < p->nBis; ++j) {
+		p->indVar[j] = p->indVar[j+1];
+	}
+}
+
 void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
-	int nbNull = 0;
 	solution *s1, *s2;
 	int ret;
 	donnees d;
 	int LB = p->LB;
 	int nb0, nb1;
-
-	int rel0P1, rel0P2, rel1P1, rel1P2;
 
 	d.p1 = (itype *) malloc ((p->n) * sizeof(itype));
 	d.w1 = (itype *) malloc ((p->n) * sizeof(itype));
@@ -472,16 +498,25 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	p->w1min = 0;
 	p->w2min = 0;
 
+	// sommes des objets restants à considérer
 	int sumW1 = p->sumW1;
 	int sumW2 = p->sumW2;
 	int sumP1 = p->sumP1;
 	int sumP2 = p->sumP2;
 
-	// Tant que tous les items n'ont pas été testés
-	while (i < p->nBis) {printf("COCO 1\n");
+	int indJ;
+	int lambda1 = p->lambda1;
+	int lambda2 = p->lambda2;
+
+	int profit;
+
+	int ideal0P1, ideal0P2, ideal1P1, ideal1P2;
+
+	while (i < p->nBis) {
+		// On teste les cas triviaux pour lesquels dual-surrogate plante
 		int indI = p->indVar[i];
-		bool toutEntre0 = ((sumW1 + p->w1min <= p->omega1) && (sumW2 + p->w2min <= p->omega2));
-		bool toutEntre1 = ((sumW1 + p->w1min + p->weights1[indI] <= p->omega1) && (sumW2 + p->w2min + p->weights2[indI] <= p->omega2));
+		bool toutEntre0 = ((sumW1 + p->w1min - p->weights1[indI] <= p->omega1) && (sumW2 + p->w2min - p->weights2[indI] <= p->omega2));
+		bool toutEntre1 = ((sumW1 + p->w1min <= p->omega1) && (sumW2 + p->w2min <= p->omega2));
 		bool unObjetEntre0 = toutEntre0;
 		bool unObjetEntre1 = toutEntre1;
 		int k = 0;
@@ -496,63 +531,77 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 			++k;
 		}
 
-		if (true/*unObjetEntre0 || unObjetEntre1*/) {
-			d.nbItem = p->nBis-1;
-			d.maxZ1 = 0;
-			// ------------------------------------------------ 1er cas, on teste selon lambda1*Z1 + lambda2*Z2
-			// ------------------------- On fixe la variable à 1
+		// vrai si l'objet indI entre dans le sac
+		bool objIentre = (p->w1min + p->weights1[indI] <= p->omega1) && (p->w2min + p->weights2[indI] <= p->omega2);
+		// vrai si on peut éxecuter surrogate en fixant l'objet indI à 0
+		bool execSurr0 = unObjetEntre0 && !toutEntre0;
+		// vrai si on peut exécuter surrogate en fixant l'objet indI à 1
+		bool execSurr1 = objIentre && unObjetEntre1 && !toutEntre1;
+
+		// On insère les poids dans le tableau des données
+		d.nbItem = p->nBis-1;
+		for (int j = 0; j < i; ++j) {
+			d.w1[j] = p->weights1[p->indVar[j]];
+			d.w2[j] = p->weights2[p->indVar[j]];
+		}
+		for (int j = i+1; j < p->nBis; ++j) {
+			d.w1[j-1] = p->weights1[p->indVar[j]];
+			d.w2[j-1] = p->weights2[p->indVar[j]];
+		}
+
+		// -------------------------------------- ICI COMMENCENT LES TESTS
+
+		// -------------------------------------- ON COMPARE AVEC LB (z*lambda)
+		if (execSurr1 || execSurr0) {
+			for (int j = 0; j < i; ++j) {
+				d.p1[j] = lambda1*p->profits1[p->indVar[j]] + lambda2*p->profits2[p->indVar[j]];
+			}
+			for (int j = i+1; j < p->nBis; ++j) {
+				d.p1[j-1] = lambda1*p->profits1[p->indVar[j]] + lambda2*p->profits2[p->indVar[j]];
+			}
+		}
+
+		// -------------------------------------- ON FIXE LA VARIABLE INDI A 1
+		if (execSurr1) {
 			d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
 			d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
 
-			for (int j = 0; j < i; ++j) {
-				int indJ = p->indVar[j];
-				d.p1[j] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
-				d.w1[j] = p->weights1[indJ];
-				d.w2[j] = p->weights2[indJ];
-			}
-			for (int j = i+1; j <= d.nbItem; ++j) {
-				int indJ = p->indVar[j];
-				d.p1[j-1] = p->lambda1*p->profits1[indJ] + p->lambda2*p->profits2[indJ];
-				d.w1[j-1] = p->weights1[indJ];
-				d.w2[j-1] = p->weights2[indJ];
-			}
-
-
-			printf("%d objets avec la capacité résiduelle : (%d,%d)\n", d.nbItem, d.omega1, d.omega2);
-			printf("P1\tW1\tW2\n");
-			for (int l = 0; l < d.nbItem; ++l) {
-				printf("%d\t%d\t%d\n", d.p1[l], d.w1[l], d.w2[l]);
-			}
-
-
-			//if (unObjetEntre1)
 			ret = initDichoMu(&s1,&s2,&d);
 			if (ret == 0) {
 				startDichoMu(&s1,&s2,&d);
 			}
-
-			if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-				/*if (s2->tab != NULL) {
+			if (s1 != NULL) {
+				if (s1->z1 < s2->z1) {
 					free(s2->tab);
-				}*/
-				free(s2);
-				s2 = s1;
+					free(s2);
+					s2 = s1;
+				} else {
+					free(s1->tab);
+					free(s1);
+				}
 			}
-			// Si la borne supérieure de la solution optimale n'atteint pas LB
-			if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min + p->lambda1*p->profits1[indI] + p->lambda2*p->profits2[indI] < LB) {
-				// On force la variable à 0, donc on la retire du problème
-				printf("FIXATION 0 PAR LB\n");
-				p->nBis -= 1;
-				for (int j = i; j < p->nBis; ++j) {
-					p->indVar[j] = p->indVar[j+1];
-				}
-				++nb0;
-			} else {
-				/*if (s2->tab != NULL) {
-					free(s2->tab);
-				}
-				free(s2);*/
-				// ------------------------- On fixe la variable à 0
+			profit = s2->z1 + lambda1*(p->z1min + p->profits1[indI]) + lambda2*(p->z2min + p->profits2[indI]);
+			free(s2->tab);
+			free(s2);
+		} else if (objIentre) {
+			if (!unObjetEntre1) {
+				profit = lambda1*(p->z1min + p->profits1[indI]) + lambda2*(p->z2min + p->profits2[indI]);
+			} else if (toutEntre1) {
+				profit = lambda1*(p->z1min + sumP1) + lambda2*(p->z2min + sumP2);
+			}
+		}
+
+		if (!objIentre || (profit < LB)) {
+			sumW1 -= p->weights1[indI];
+			sumW2 -= p->weights2[indI];
+			sumP1 -= p->profits1[indI];
+			sumP2 -= p->profits2[indI];
+			fixerVar0(p, i);
+			++nb0;
+		} else {
+			
+			// -------------------------------------- ON FIXE LA VARIABLE INDI A 0
+			if (execSurr0) {
 				d.omega1 = p->omega1 - p->w1min;
 				d.omega2 = p->omega2 - p->w2min;
 
@@ -560,75 +609,84 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 				if (ret == 0) {
 					startDichoMu(&s1,&s2,&d);
 				}
-
-				if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-					/*if (s2->tab != NULL) {
+				if (s1 != NULL) {
+					if (s1->z1 < s2->z1) {
 						free(s2->tab);
-					}*/
-					free(s2);
-					s2 = s1;
+						free(s2);
+						s2 = s1;
+					} else {
+						free(s1->tab);
+						free(s1);
+					}
 				}
-				// Si la borne supérieure de la solution optimale n'atteint pas LB
-				if (s2->z1 + p->lambda1*p->z1min + p->lambda2*p->z2min < LB) {
-					printf("FIXATION 1 PAR LB\n");
-					++nb1;
-					// On force la variable à 1, donc on la retire du problème
-					p->varFix1[p->nVarFix1] = indI;
-					p->nVarFix1 += 1;
-					p->z1min += p->profits1[indI];
-					p->z2min += p->profits2[indI];
-					p->w1min += p->weights1[indI];
-					p->w2min += p->weights2[indI];
-					p->nBis -= 1;
-					for (int j = i; j < p->nBis; ++j) {
-						p->indVar[j] = p->indVar[j+1];
-					}
-				} else {
-					/*if (s2->tab != NULL) {
-						free(s2->tab);
-					}
-					free(s2);*/
-					// ------------------------------------------------ 2ème cas, on teste selon Z2
-					// ------------------------- On fixe la variable à 1
-					d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
-					d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
+				profit = s2->z1 + lambda1*p->z1min + lambda2*p->z2min;
+				free(s2->tab);
+				free(s2);
+			} else if (!unObjetEntre0) {
+				profit = lambda1*p->z1min + lambda2*p->z2min;
+			} else if (toutEntre0) {
+				profit = lambda1*(p->z1min + sumP1 - p->profits1[indI]) + lambda2*(p->z2min + sumP2 - p->profits2[indI]);
+			}
+
+			if (profit < LB) {
+				fixerVar1(p, i);
+				++nb1;
+			} else {
+
+				// -------------------------------------- ON COMPARE AVEC Z1
+
+				if (execSurr1 || execSurr0) {
 					for (int j = 0; j < i; ++j) {
-						d.p1[j] = p->profits2[p->indVar[j]];
+						d.p1[j] = p->profits1[p->indVar[j]];
 					}
 					for (int j = i+1; j < p->nBis; ++j) {
-						d.p1[j-1] = p->profits2[p->indVar[j]];
+						d.p1[j-1] = p->profits1[p->indVar[j]];
 					}
+				}
+
+				// -------------------------------------- ON FIXE LA VARIABLE INDI A 1
+
+				if (execSurr1) {
+					d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
+					d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
 
 					ret = initDichoMu(&s1,&s2,&d);
 					if (ret == 0) {
 						startDichoMu(&s1,&s2,&d);
 					}
-
-					if (s1 == NULL) {
-						++nbNull;
-					}
-					if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-						/*if (s2->tab != NULL) {
+					if (s1 != NULL) {
+						if (s1->z1 < s2->z1) {
 							free(s2->tab);
-						}*/
-						free(s2);
-						s2 = s1;
+							free(s2);
+							s2 = s1;
+						} else {
+							free(s1->tab);
+							free(s1);
+						}
 					}
-					rel0P2 = s2->z1 + p->z2min;
+					profit = s2->z1 + p->z1min + p->profits1[indI];
+					free(s2->tab);
+					free(s2);
+				} else if (objIentre) {
+					if (!unObjetEntre1) {
+						profit = p->z1min + p->profits1[indI];
+					} else if (toutEntre1) {
+						profit = p->z1min + sumP1;
+					}
+				}
+				ideal1P1 = profit;
 
-					if (rel0P2 + p->profits2[indI] <= y2) {
-						printf("FIXATION 0 PAR Z2\n");
-						p->nBis -= 1;
-						for (int j = i; j < p->nBis; ++j) {
-							p->indVar[j] = p->indVar[j+1];
-						}
-						++nb0;
-					} else {
-						/*if (s2->tab != NULL) {
-							free(s2->tab);
-						}
-						free(s2);*/
-						// ------------------------- On fixe la variable à 0
+				if (!objIentre || (profit < y1)) {
+					sumW1 -= p->weights1[indI];
+					sumW2 -= p->weights2[indI];
+					sumP1 -= p->profits1[indI];
+					sumP2 -= p->profits2[indI];
+					fixerVar0(p, i);
+					++nb0;
+				} else {
+
+					// -------------------------------------- ON FIXE LA VARIABLE INDI A 0
+					if (execSurr0) {
 						d.omega1 = p->omega1 - p->w1min;
 						d.omega2 = p->omega2 - p->w2min;
 
@@ -636,75 +694,83 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 						if (ret == 0) {
 							startDichoMu(&s1,&s2,&d);
 						}
-
-						if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-							/*if (s2->tab != NULL) {
+						if (s1 != NULL) {
+							if (s1->z1 < s2->z1) {
 								free(s2->tab);
-							}*/
-							free(s2);
-							s2 = s1;
+								free(s2);
+								s2 = s1;
+							} else {
+								free(s1->tab);
+								free(s1);
+							}
 						}
-						rel1P2 = s2->z1 + p->z2min + p->profits2[indI];
+						profit = s2->z1 + p->z1min;
+						free(s2->tab);
+						free(s2);
+					} else if (!unObjetEntre0) {
+						profit = p->z1min;
+					} else if (toutEntre0) {
+						profit = p->z1min + sumP1 - p->profits1[indI];
+					}
+					ideal0P1 = profit;
 
-						// Si la borne supérieure de la solution optimale n'atteint pas le triangle
-						if (rel1P2 <= y2) {
-							printf("FIXATION 1 PAR Z2\n");
-							++nb1;
-							// On fixe la variable à 1, donc on la retire du problème
-							p->varFix1[p->nVarFix1] = indI;
-							p->nVarFix1 += 1;
-							p->z1min += p->profits1[indI];
-							p->z2min += p->profits2[indI];
-							p->w1min += p->weights1[indI];
-							p->w2min += p->weights2[indI];
-							p->nBis -= 1;
-							for (int j = i; j < p->nBis; ++j) {
-								p->indVar[j] = p->indVar[j+1];
-							}
-						} else {
-							/*if (s2->tab != NULL) {
-								free(s2->tab);
-							}
-							free(s2);*/
-							// ------------------------------------------------ 3ème cas, on teste selon Z1
-							// ------------------------- On fixe la variable à 0
+					if (profit < y1) {
+						fixerVar1(p, i);
+						++nb1;
+					} else {
+
+						// -------------------------------------- ON COMPARE AVEC Z2
+						if (execSurr1 || execSurr0) {
 							for (int j = 0; j < i; ++j) {
-								d.p1[j] = p->profits1[p->indVar[j]];
+								d.p1[j] = p->profits2[p->indVar[j]];
 							}
 							for (int j = i+1; j < p->nBis; ++j) {
-								d.p1[j-1] = p->profits1[p->indVar[j]];
+								d.p1[j-1] = p->profits2[p->indVar[j]];
 							}
+						}
+
+						// -------------------------------------- ON FIXE LA VARIABLE INDI A 1
+						if (execSurr1) {
+							d.omega1 = p->omega1 - p->w1min - p->weights1[indI];
+							d.omega2 = p->omega2 - p->w2min - p->weights2[indI];
 
 							ret = initDichoMu(&s1,&s2,&d);
 							if (ret == 0) {
 								startDichoMu(&s1,&s2,&d);
 							}
-
-							if (s1 == NULL) {
-								++nbNull;
-							}
-							if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-								/*if (s2->tab != NULL) {
+							if (s1 != NULL) {
+								if (s1->z1 < s2->z1) {
 									free(s2->tab);
-								}*/
-								free(s2);
-								s2 = s1;
+									free(s2);
+									s2 = s1;
+								} else {
+									free(s1->tab);
+									free(s1);
+								}
 							}
-							rel0P1 = s2->z1 + p->z1min;
+							profit = s2->z1 + p->z2min + p->profits2[indI];
+							free(s2->tab);
+							free(s2);
+						} else if (objIentre) {
+							if (!unObjetEntre1) {
+								profit = p->z2min + p->profits2[indI];
+							} else if (toutEntre1) {
+								profit = p->z2min + sumP2;
+							}
+						}
+						ideal1P2 = profit;
 
-							if (rel0P1 + p->profits1[indI] <= y1) {
-								printf("FIXATION 0 PAR Z1\n");
-								p->nBis -= 1;
-								for (int j = i; j < p->nBis; ++j) {
-									p->indVar[j] = p->indVar[j+1];
-								}
-								++nb0;
-							} else {
-								/*if (s2->tab != NULL) {
-									free(s2->tab);
-								}
-								free(s2);*/
-								// ------------------------- On fixe la variable à 0
+						if (!objIentre || (profit < y2)) {
+							sumW1 -= p->weights1[indI];
+							sumW2 -= p->weights2[indI];
+							sumP1 -= p->profits1[indI];
+							sumP2 -= p->profits2[indI];
+							fixerVar0(p, i);
+							++nb0;
+						} else {
+
+							// -------------------------------------- ON FIXE LA VARIABLE INDI A 0
+							if (execSurr0) {
 								d.omega1 = p->omega1 - p->w1min;
 								d.omega2 = p->omega2 - p->w2min;
 
@@ -712,75 +778,60 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 								if (ret == 0) {
 									startDichoMu(&s1,&s2,&d);
 								}
-
-								if ((s1 != NULL) && (s1->z1 < s2->z1)) {
-									/*if (s2->tab != NULL) {
+								if (s1 != NULL) {
+									if (s1->z1 < s2->z1) {
 										free(s2->tab);
-									}*/
-									free(s2);
-									s2 = s1;
-								}
-								rel1P1 = s2->z1 + p->z1min + p->profits1[indI];
-
-								// Si la borne supérieure de la solution optimale n'atteint pas le triangle
-								if (rel1P1 <= y1) {
-									printf("FIXATION 1 PAR Z1\n");
-									++nb1;
-									// On fixe la variable à 1, donc on la retire du problème
-									p->varFix1[p->nVarFix1] = indI;
-									p->nVarFix1 += 1;
-									p->z1min += p->profits1[indI];
-									p->z2min += p->profits2[indI];
-									p->w1min += p->weights1[indI];
-									p->w2min += p->weights2[indI];
-									p->nBis -= 1;
-									for (int j = i; j < p->nBis; ++j) {
-										p->indVar[j] = p->indVar[j+1];
-									}
-								} else {
-									/*if (s2->tab != NULL) {
-										free(s2->tab);
-									}
-									free(s2);*/
-									// ------------------------------------------------ 4ème cas, on teste si le point idéal est dominé
-									// ------------------------- On fixe la variable à 0
-									int k = 0;
-									int nbSol = lSolHeur->nbSol;
-									Solution **solsHeur = lSolHeur->solutions;
-									while ((k < nbSol) && ((rel0P1 > solsHeur[k]->p1) || (rel0P2 > solsHeur[k]->p2))) {
-										++k;	
-									}
-									if (k < nbSol) {
-										printf("FIXATION 0 PAR POINT IDEAL\n");
-										p->nBis -= 1;
-										for (int j = i; j < p->nBis; ++j) {
-											p->indVar[j] = p->indVar[j+1];
-										}
-										++nb0;
+										free(s2);
+										s2 = s1;
 									} else {
-										k = 0;
-										while ((k < nbSol) && ((rel1P1 > solsHeur[k]->p1) || (rel1P2 > solsHeur[k]->p2))) {
-											++k;	
-										}
-										if (k < nbSol) {
-											printf("FIXATION 1 PAR POINT IDEAL\n");
-											++nb1;
-											// On fixe la variable à 1, donc on la retire du problème
-											p->varFix1[p->nVarFix1] = indI;
-											p->nVarFix1 += 1;
-											p->z1min += p->profits1[indI];
-											p->z2min += p->profits2[indI];
-											p->w1min += p->weights1[indI];
-											p->w2min += p->weights2[indI];
-											p->nBis -= 1;
-											for (int j = i; j < p->nBis; ++j) {
-												p->indVar[j] = p->indVar[j+1];
-											}
-										} else {
-											++i;
-										}
+										free(s1->tab);
+										free(s1);
 									}
-									// ------------------------- On fixe la variable à 1
+								}
+								profit = s2->z1 + p->z2min;
+								free(s2->tab);
+								free(s2);
+							} else if (!unObjetEntre0) {
+								profit = p->z2min;
+							} else if (toutEntre0) {
+								profit = p->z2min + sumP2 - p->profits2[indI];
+							}
+							ideal0P2 = profit;
+
+							if (profit < y2) {
+								fixerVar1(p, i);
+								++nb1;
+							} else {
+
+								// -------------------------------------- ON COMPARE AVEC LES POINTS IDEAUX
+
+								// -------------------------------------- AVEC LE POINT IDEAL POUR INDI A 1
+								int k = 0;
+								while ((k < lSolHeur->nbSol) && ((ideal1P1 > lSolHeur->solutions[k]->p1) || (ideal1P2 > lSolHeur->solutions[k]->p2))) {
+									++k;
+								}
+
+								if (k < lSolHeur->nbSol) {
+									sumW1 -= p->weights1[indI];
+									sumW2 -= p->weights2[indI];
+									sumP1 -= p->profits1[indI];
+									sumP2 -= p->profits2[indI];
+									fixerVar0(p, i);
+									++nb0;
+								} else {
+
+									// -------------------------------------- AVEC LE POINT IDEAL POUR INDI A 0
+									int k = 0;
+									while ((k < lSolHeur->nbSol) && ((ideal0P1 > lSolHeur->solutions[k]->p1) || (ideal0P2 > lSolHeur->solutions[k]->p2))) {
+										++k;
+									}
+
+									if (k < lSolHeur->nbSol) {
+										fixerVar1(p, i);
+										++nb1;
+									} else {
+										++i;
+									}
 								}
 							}
 						}
@@ -788,31 +839,17 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 				}
 			}
 		}
-
-		//getchar();
-
-		// Libération mémoire
-		/*if (s2->tab != NULL) {
-			free(s2->tab);
-		}
-		free(s2);*/
 	}
-
-	/*for (int j = 0; j <= p->nBis; ++j) {
-		printf("%d\t%d\n", p->pCumul1[j], p->pCumul2[j]);
-	}*/
 
 	free(d.p1);
 	free(d.w1);
 	free(d.w2);
-	printf("nb0=%d\n", nb0);
-	printf("nb1=%d\n", nb1);
-	//printf("nbNull=%d\n", nbNull);
-
-
 	calculerProfitsCumules(p);
 	calculerPoidsCumules(p);
-	// J'adore qu'un plan se déroule sans accroc!
+
+	printf("\nnb0=%d\n", nb0);
+	printf("nb1=%d\n", nb1);
+	printf("reste=%d\n", p->nBis);
 }
 
 Solution *copierSolution(Solution *sol, int n) {

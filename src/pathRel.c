@@ -80,11 +80,13 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			lSolComp = completions(Xc, p);
 			for (int k = 0; k < lSolComp->nbSol; ++k) {
 				if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
+					free(lSolComp->solutions[k]->var);
 					free(lSolComp->solutions[k]);
 				}
 			}
 			free(lSolComp->solutions);
 			free(lSolComp);
+			free(Xc->var);
 			free(Xc);
 		// Si l'objet a été ajouté et que la solution est complète
 		} else if (estComplete(X, p)) {
@@ -96,7 +98,7 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			int bestJ2 = -1;
 			int indV;
 			int j = 0;
-			int nDegr = 2;
+			int nDegr = 1;
 
 			while ((nDegr > 0) && (j < n) && (bestJ2 == -1)) {
 				indV = p->indVar[j];
@@ -119,17 +121,8 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			int ind = 0;
 			indV = p->indVar[n-ind-1];
 			int sum = 0;
-			//lastI[0] = ind;
 
-
-						int sp1 = 0;
-						int sp2 = 0;
-						int sw1 = 0;
-						int sw2 = 0;
-
-
-
-			while ((profondeur != -1) && (sum < 50)) {
+			while ((profondeur != -1) && (sum < 5*p->n)) {
 				indV = p->indVar[n-ind-1];
 				if (ind == n) {
 					--profondeur;
@@ -158,12 +151,15 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 						lSolComp = completions(Xc2, p);
 						if (lSolComp->nbSol == 0) {
 							if (!ajouterSolutionDom(lSolAdm, Xc2)) {
+								free(Xc2->var);
 								free(Xc2);
 							}
 						} else {
+							free(Xc2->var);
 							free(Xc2);
 							for (int k = 0; k < lSolComp->nbSol; ++k) {
 								if (!ajouterSolutionDom(lSolAdm, lSolComp->solutions[k])) {
+									free(lSolComp->solutions[k]->var);
 									free(lSolComp->solutions[k]);
 								}
 							}
@@ -187,13 +183,14 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 					++ind;
 				}
 			}
+			free(Xc->var);
 			free(Xc);
 			free(lastI);
 		}
-
 		--hd;
 	}
-
+	free(X->var);
+	free(X);
 	//printf("nbSol = %d\n", *nbSol);
 
 	// on trie les solutions
@@ -209,6 +206,8 @@ ListeSol *pathRelinking(Probleme *p, Solution *initSol, Solution *guidingSol) {
 			}
 		}
 	} while (changement);
+
+	printf("FIN PATH RELINKING\n");
 
 	return lSolAdm;
 }
