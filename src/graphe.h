@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 
+typedef struct ListeSol ListeSol;
 typedef struct Probleme Probleme;
 typedef struct Solution Solution;
 
@@ -33,7 +34,7 @@ struct Chemin {
 	bool existeAlt;		// vrai si la solution admet au moins une réoptimisation
 };
 
-Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2);
+Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2, ListeSol *lSolHeur);
 Chemin **initialiserChemins(Noeud **noeuds, int n);
 Noeud *creerNoeudAvecAjout(Probleme *p, int i, Noeud *noeudPrec);
 Noeud *creerNoeudSansAjout(Noeud *noeudPrec);
@@ -42,6 +43,6 @@ void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec);
 void desallouerGraphe(int *nSol, Noeud ***noeud, int n);
 void afficherChemin(Chemin *sol, int n);
 void afficherGraphe(Noeud *racine, int n);
-void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout);
+void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout, ListeSol *lSolHeur, int y1, int y2);
 
 #endif

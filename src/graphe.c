@@ -53,7 +53,7 @@ void modifierNoeudSansAjout(Noeud *noeudModif, Noeud* noeudPrec) {
 	noeudModif->precBest = noeudPrec;
 }
 
-void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout) {
+void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, bool *bSansAjout, ListeSol *lSolHeur, int y1, int y2) {
 	int indI = p->indVar[i-1];
 	*bAjout = (noeudPrec->w1 + p->weights1[indI] <= p->omega1) && (noeudPrec->w2 + p->weights2[indI] <= p->omega2);
 	*bSansAjout = (noeudPrec->val + p->lambda1*p->pCumul1[i] + p->lambda2*p->pCumul2[i] >= p->LB);
@@ -64,6 +64,7 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 		int lambda2 = p->lambda2;
 		int LB = p->LB;
 		bool toDelete = false;
+		Solution *sol;
 
 		solution *s1, *s2;
 		int ret;
@@ -126,6 +127,19 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 						free(s1->tab);
 						free(s1);
 					}
+				} else {
+					sol = creerSolutionSurrGraphe(p, s2, noeudPrec, i, true);
+					if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+						free(sol->var);
+						free(sol);
+					} else {
+						//printf("(%d,%d)\n", sol->p1, sol->p2);
+						int newLB = meilleureBorne(lSolHeur, p);
+						if (newLB > LB) {
+							LB = newLB;
+							p->LB = LB;
+						}
+					}
 				}
 				profit = s2->z1 + noeudPrec->val + lambda1*p->profits1[indI] + lambda2*p->profits2[indI];
 				free(s2->tab);
@@ -160,6 +174,19 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 					} else {
 						free(s1->tab);
 						free(s1);
+					}
+				} else {
+					sol = creerSolutionSurrGraphe(p, s2, noeudPrec, i, false);
+					if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+						free(sol->var);
+						free(sol);
+					} else {
+						//printf("(%d,%d)\n", sol->p1, sol->p2);
+						int newLB = meilleureBorne(lSolHeur, p);
+						if (newLB > LB) {
+							LB = newLB;
+							p->LB = LB;
+						}
 					}
 				}
 				profit = s2->z1 + noeudPrec->val;
@@ -298,7 +325,7 @@ void checkGenerationNoeuds(Noeud *noeudPrec, Probleme *p, int i, bool *bAjout, b
 	}
 }*/
 
-Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) {
+Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2, ListeSol *lSolHeur) {
 	Noeud ***noeuds;
 	Noeud *nouveau, *noeud, *noeudPrec;
 
@@ -306,7 +333,7 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 
 	int lambda1 = p->lambda1;
 	int lambda2 = p->lambda2;
-	int LB = lambda1*(sol1->p1+1) + lambda2*(sol2->p2+1);
+	int LB = p->LB;//lambda1*(sol1->p1+1) + lambda2*(sol2->p2+1);
 
 	nouveau = (Noeud *) malloc(sizeof(Noeud));
 	nouveau->val = lambda1*p->z1min + lambda2*p->z2min;
@@ -340,7 +367,8 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 			noeudPrec = noeuds[i-1][j];
 			int k;
 
-			checkGenerationNoeuds(noeudPrec, p, i, &bAjout, &bSansAjout);
+			checkGenerationNoeuds(noeudPrec, p, i, &bAjout, &bSansAjout, lSolHeur, sol1->p1, sol2->p2);
+			LB = p->LB;
 
 			// Si l'objet entre dans le sac alors on cherche à ajouter le noeud correspondant
 			if (bAjout) {
@@ -369,27 +397,11 @@ Noeud ***genererGraphe(Probleme *p, int **nSol, Solution *sol1, Solution *sol2) 
 					noeud->ajoutForce = noeudPrec->ajoutForce;
 				}
 			}
+
+
 			// Si sans l'ajout de l'objet il est possible d'atteindre la borne
 			// Alors on crée le noeud
-			if (bSansAjout) {		// Future condition ?
-				
-
-
-				/*int futurW1 = noeudPrec->w1 + p->wCumul1[i];
-				int futurW2 = noeudPrec->w2 + p->wCumul2[i];
-				int l = i-1;
-				bool ajout = true;
-				Noeud *nCourant = noeudPrec;
-				if ((futurW1 + p->weights1[indI] > p->omega1) || (futurW2 + p->weights2[indI] > p->omega2)) {
-					while (ajout && (l > 0)) {
-						--l;
-						if ((nCourant->precBest->val == nCourant->val) && (futurW1 + p->weights1[p->indVar[l]] <= p->omega1) && (futurW1 + p->weights2[p->indVar[l]] <= p->omega2)) {
-							ajout = false;
-						}
-						nCourant = nCourant->precBest;
-					}
-				}*/
-
+			if (bSansAjout) {
 				k = 0;
 				// On regarde si le noeud à ajouter existe déjà
 				while ((k < nb) && ((noeuds[i][k]->w1 != noeudPrec->w1) || (noeuds[i][k]->w2 != noeudPrec->w2))) {

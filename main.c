@@ -189,6 +189,8 @@ ListeSol *trouverSolutions(Probleme *p) {
 		} while (changement);
 	}
 
+
+
 	for (int i = 1; i < lSolSup->nbSol; ++i) {
 		lSolLB->nbSol = 0;
 		Solution *solSup1 = solSup[i-1];
@@ -202,30 +204,20 @@ ListeSol *trouverSolutions(Probleme *p) {
 			p->solSup1 = solSup1;
 			p->solSup2 = solSup2;
 
-			ajouterSolutionLB(lSolLB, solSup1);
-			ajouterSolutionLB(lSolLB, solSup2);
+			ajouterSolution(lSolLB, solSup1);
+			ajouterSolution(lSolLB, solSup2);
 
 			LB = meilleureBorne(lSolPR[i-1], p);
 			p->LB = LB;
 
-			/*for (int i = 0; i < p->n; ++i) {
-				printf("i=%d\n", p->indVar[i]);
-			}
-			assert(i < 3);*/
-
 			trierIndvar(p);
-
-			/*for (int i = 0; i < p->n; ++i) {
-				printf("i=%d\n", p->indVar[i]);
-			}
-			assert(i < 3);*/
 
 			fixer01(p, solSup1->p1, solSup2->p2, lSolPR[i-1]);
 
 			printf("triangle %d/%d\n", i, lSolSup->nbSol-1);
 			if (p->nBis > 0) {
 				Tas *tas = TAS_initialiser(p->nBis*p->nBis);
-				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2);
+				Noeud ***graphe = genererGraphe(p, &nNoeuds, solSup1, solSup2, lSolPR[i-1]);
 				Chemin **chemins = initialiserChemins(graphe[p->nBis], nNoeuds[p->nBis]);
 
 				for (int j = 0; j < nNoeuds[p->nBis]; ++j) {
@@ -235,11 +227,11 @@ ListeSol *trouverSolutions(Probleme *p) {
 				while ((tas->n) && ((TAS_maximum(tas)->val >= LB))) {
 					Chemin *chem = TAS_maximum(tas);
 					TAS_retirerMax(tas);
-					Solution *sol = creerSolution(p, chem);
+					Solution *sol = creerSolutionChemin(p, chem);
 					if ((sol->p1 > solSup1->p1) && (sol->p2 > solSup2->p2) && estEfficace(resultat, sol)) {
 						ajouterSolution(resultat, sol);
-						ajouterSolutionLB(lSolLB, sol);
-						newLB = meilleureBorne(lSolLB, p);
+						ajouterSolutionDomTri(lSolPR[i-1], sol);
+						newLB = meilleureBorne(lSolPR[i-1], p);
 						if (newLB > LB) {
 							LB = newLB;
 							p->LB = newLB;
@@ -252,7 +244,7 @@ ListeSol *trouverSolutions(Probleme *p) {
 		}
 	}
 
-	//printf("COCO\n");
+	
 	//plotAll(solPathR, nbSolPath, solSup, nbSup);
 
 	for (int i = 0; i < lSolSup->nbSol-1; ++i) {

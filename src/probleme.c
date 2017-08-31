@@ -89,6 +89,63 @@ bool ajouterSolutionDom(ListeSol *lSol, Solution *sol) {
 	return (!estDomine);
 }
 
+bool ajouterSolutionDomTri(ListeSol *lSol, Solution *sol) {
+	int j = 0;
+	Solution *solCourante;
+	Solution **solutions = lSol->solutions;
+	int nbSol = lSol->nbSol;
+	int nbMax = lSol->nbMax;
+	bool ajout = false;
+
+	while ((j < nbSol) && (solutions[j]->p2 >= sol->p2)) {
+		++j;
+	}
+
+	// Si la recherche a été stoppée
+	if (j < nbSol) {
+		ajout = true;
+		// Si sol domine une ou plusieurs solutions
+		if ((sol->p2 > solutions[j]->p2) && (sol->p1 > solutions[j]->p1)) {
+			free(solutions[j]->var);
+			free(solutions[j]);
+			solutions[j] = sol;
+			// on conserve l'emplacement de la solution à ajouter
+			int place = j;
+			// on compte le nombre de solutions que sol domine
+			int nSolDominee = 0;
+			++j;
+			while ((j < nbSol) && ((sol->p2 > solutions[j]->p2) && (sol->p1 > solutions[j]->p1))) {
+				free(solutions[j]->var);
+				free(solutions[j]);
+				++nSolDominee;
+				++j;
+			}
+			if (nSolDominee > 0) {
+				for (int k = place+1; k < nbSol-nSolDominee; ++k) {
+					solutions[k] = solutions[k+nSolDominee];
+				}
+			}
+			nbSol -= nSolDominee;
+		} else {
+			// Sinon on ajoute la solution aux autres, on shifte donc des solutions
+			if (nbSol == nbMax) {
+				nbMax = nbMax*2;
+				lSol->solutions = (Solution **) realloc(lSol->solutions, nbMax*sizeof(Solution *));
+				solutions = lSol->solutions;
+			}
+			for (int k = nbSol; k > j; --k) {
+				solutions[k] = solutions[k-1];
+			}
+			solutions[j] = sol;
+			++nbSol;
+		}
+		lSol->nbSol = nbSol;
+		lSol->nbMax = nbMax;
+	}
+
+	return (ajout);
+}
+
 bool estComplete(Solution *solution, Probleme *p) {
 	bool complete = true;
 	int n = p->n;
@@ -385,7 +442,7 @@ Probleme *genererProblemeGautier(char *nomFichier) {
 }
 
 // Transforme un chemin en un vecteur de booléens correspondant à la solution (du sous problème => à corriger)
-Solution *creerSolution(Probleme *p, Chemin *chemin) {
+Solution *creerSolutionChemin(Probleme *p, Chemin *chemin) {
 	Solution *sol = (Solution *) malloc(sizeof(Solution));
 	Noeud *noeud, *noeudPrec;
 	int nBis = p->nBis;
@@ -452,6 +509,144 @@ Solution *creerSolution(Probleme *p, Chemin *chemin) {
 	return sol;
 }
 
+Solution *creerSolutionSurrPre(Probleme *p, solution *s, int i, bool ajout) {
+	Solution *sol = (Solution *) malloc(sizeof(Solution));
+	sol->var = (bool *) malloc(p->n*sizeof(bool));
+
+	int indJ;
+	int p1 = 0;
+	int p2 = 0;
+	int w1 = 0;
+	int w2 = 0;
+
+	for (int j = 0; j < p->n; ++j) {
+		sol->var[j] = false;
+	}
+
+	for (int j = 0; j < p->nVarFix1; ++j) {
+		indJ = p->varFix1[j];
+		assert(indJ < p->n);
+		sol->var[indJ] = true;
+		p1 += p->profits1[indJ];
+		p2 += p->profits2[indJ];
+		w1 += p->weights1[indJ];
+		w2 += p->weights2[indJ];
+	}
+
+	for (int j = 0; j < i; ++j) {
+		if (s->tab[j]) {
+			int indJ = p->indVar[j];
+			assert(indJ < p->n);
+			sol->var[indJ] = true;
+			p1 += p->profits1[indJ];
+			p2 += p->profits2[indJ];
+			w1 += p->weights1[indJ];
+			w2 += p->weights2[indJ];
+		}
+	}
+
+	if (ajout) {
+		int indI = p->indVar[i];
+		sol->var[indI] = true;
+		p1 += p->profits1[indI];
+		p2 += p->profits2[indI];
+		w1 += p->weights1[indI];
+		w2 += p->weights2[indI];
+	}
+
+	for (int j = i+1; j < p->nBis; ++j) {
+		if (s->tab[j-1]) {
+			int indJ = p->indVar[j];
+			assert(indJ < p->n);
+			sol->var[indJ] = true;
+			p1 += p->profits1[indJ];
+			p2 += p->profits2[indJ];
+			w1 += p->weights1[indJ];
+			w2 += p->weights2[indJ];
+		}
+	}
+
+	sol->p1 = p1;
+	sol->p2 = p2;
+	sol->w1 = w1;
+	sol->w2 = w2;
+
+	return sol;
+}
+
+Solution *creerSolutionSurrGraphe(Probleme *p, solution *s, Noeud *noeudPrec, int i, bool ajout) {
+	Solution *sol = (Solution *) malloc(sizeof(Solution));
+	sol->var = (bool *) malloc(p->n*sizeof(bool));
+
+	int indJ;
+	int p1 = 0;
+	int p2 = 0;
+	int w1 = 0;
+	int w2 = 0;
+
+	// on met tout à faux
+	for (int j = 0; j < p->n; ++j) {
+		sol->var[j] = false;
+	}
+
+	// les variables fixées à 1 sont ajoutées
+	/*for (int j = 0; j < p->nVarFix1; ++j) {
+		indJ = p->varFix1[j];
+		assert(indJ < p->n);
+		sol->var[indJ] = true;
+		p1 += p->profits1[indJ];
+		p2 += p->profits2[indJ];
+		w1 += p->weights1[indJ];
+		w2 += p->weights2[indJ];
+	}*/
+	// solutions à construire en parcourant les meilleurs noeuds précédents
+	p1 += noeudPrec->p1;
+	p2 += noeudPrec->p2;
+	w1 += noeudPrec->w1;
+	w2 += noeudPrec->w2;
+
+	/*for (int j = i; j < i-1; ++j) {
+		if (s->tab[j]) {
+			int indJ = p->indVar[j];
+			assert(indJ < p->n);
+			sol->var[indJ] = true;
+			p1 += p->profits1[indJ];
+			p2 += p->profits2[indJ];
+			w1 += p->weights1[indJ];
+			w2 += p->weights2[indJ];
+		}
+	}*/
+
+	if (ajout) {
+		int indI = p->indVar[i-1];
+		assert(indI < p->n);
+		sol->var[indI] = true;
+		p1 += p->profits1[indI];
+		p2 += p->profits2[indI];
+		w1 += p->weights1[indI];
+		w2 += p->weights2[indI];
+	}
+
+	for (int j = i; j < p->nBis; ++j) {
+		if (s->tab[j-i]) {
+			int indJ = p->indVar[j];
+			assert(indJ < p->n);
+			sol->var[indJ] = true;
+			p1 += p->profits1[indJ];
+			p2 += p->profits2[indJ];
+			w1 += p->weights1[indJ];
+			w2 += p->weights2[indJ];
+		}
+	}
+
+	sol->p1 = p1;
+	sol->p2 = p2;
+	sol->w1 = w1;
+	sol->w2 = w2;
+
+	return sol;
+}
+
 void fixerVar0(Probleme *p, int i) {
 	p->nBis -= 1;
 	for (int j = i; j < p->nBis; ++j) {
@@ -475,6 +670,7 @@ void fixerVar1(Probleme *p, int i) {
 
 void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 	solution *s1, *s2;
+	Solution *sol;
 	int ret;
 	donnees d;
 	int LB = p->LB;
@@ -512,6 +708,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 
 	int ideal0P1, ideal0P2, ideal1P1, ideal1P2;
 
+//for (int test = 0; test < 2; ++test) {
 	while (i < p->nBis) {
 		// On teste les cas triviaux pour lesquels dual-surrogate plante
 		int indI = p->indVar[i];
@@ -579,6 +776,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					free(s1->tab);
 					free(s1);
 				}
+			} else {
+				sol = creerSolutionSurrPre(p, s2, i, true);
+				if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+					free(sol->var);
+					free(sol);
+				} else {
+					//printf("(%d,%d)\n", sol->p1, sol->p2);
+					int newLB = meilleureBorne(lSolHeur, p);
+					if (newLB > LB) {
+						LB = newLB;
+						p->LB = LB;
+					}
+				}
 			}
 			profit = s2->z1 + lambda1*(p->z1min + p->profits1[indI]) + lambda2*(p->z2min + p->profits2[indI]);
 			free(s2->tab);
@@ -617,6 +827,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					} else {
 						free(s1->tab);
 						free(s1);
+					}
+				} else {
+				sol = creerSolutionSurrPre(p, s2, i, false);
+					if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+						free(sol->var);
+						free(sol);
+					} else {
+						//printf("(%d,%d)\n", sol->p1, sol->p2);
+						int newLB = meilleureBorne(lSolHeur, p);
+						if (newLB > LB) {
+							LB = newLB;
+							p->LB = LB;
+						}
 					}
 				}
 				profit = s2->z1 + lambda1*p->z1min + lambda2*p->z2min;
@@ -673,6 +896,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 					} else if (toutEntre1) {
 						profit = p->z1min + sumP1;
 					}
+				} else {
+					sol = creerSolutionSurrPre(p, s2, i, true);
+					if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+						free(sol->var);
+						free(sol);
+					} else {
+						//printf("(%d,%d)\n", sol->p1, sol->p2);
+						int newLB = meilleureBorne(lSolHeur, p);
+						if (newLB > LB) {
+							LB = newLB;
+							p->LB = LB;
+						}
+					}
 				}
 				ideal1P1 = profit;
 
@@ -702,6 +938,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 							} else {
 								free(s1->tab);
 								free(s1);
+							}
+						} else {
+							sol = creerSolutionSurrPre(p, s2, i, false);
+							if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+								free(sol->var);
+								free(sol);
+							} else {
+								//printf("(%d,%d)\n", sol->p1, sol->p2);
+								int newLB = meilleureBorne(lSolHeur, p);
+								if (newLB > LB) {
+									LB = newLB;
+									p->LB = LB;
+								}
 							}
 						}
 						profit = s2->z1 + p->z1min;
@@ -747,6 +996,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 									free(s1->tab);
 									free(s1);
 								}
+							} else {
+								sol = creerSolutionSurrPre(p, s2, i, true);
+								if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+									free(sol->var);
+									free(sol);
+								} else {
+									//printf("(%d,%d)\n", sol->p1, sol->p2);
+									int newLB = meilleureBorne(lSolHeur, p);
+									if (newLB > LB) {
+										LB = newLB;
+										p->LB = LB;
+									}
+								}
 							}
 							profit = s2->z1 + p->z2min + p->profits2[indI];
 							free(s2->tab);
@@ -786,6 +1048,19 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 									} else {
 										free(s1->tab);
 										free(s1);
+									}
+								} else {
+									sol = creerSolutionSurrPre(p, s2, i, false);
+									if (!((sol->p1 > y1) && (sol->p2 > y2) && (ajouterSolutionDomTri(lSolHeur, sol)))) {
+										free(sol->var);
+										free(sol);
+									} else {
+										//printf("(%d,%d)\n", sol->p1, sol->p2);
+										int newLB = meilleureBorne(lSolHeur, p);
+										if (newLB > LB) {
+											LB = newLB;
+											p->LB = LB;
+										}
 									}
 								}
 								profit = s2->z1 + p->z2min;
@@ -840,6 +1115,7 @@ void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur) {
 			}
 		}
 	}
+//}
 
 	free(d.p1);
 	free(d.w1);

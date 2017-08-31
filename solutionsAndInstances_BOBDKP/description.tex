@@ -1,0 +1,81 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{a4wide}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{enumerate}
+\let\chapter\section
+\usepackage[linesnumbered,algoruled,ruled,vlined]{algorithm2e}
+\usepackage{verbatim}
+\usepackage{subfig}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usetikzlibrary{patterns}
+\usepackage{pdflscape}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{url}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+
+
+\DeclareMathOperator{\BDKP}{2\mathit{DKP}}
+\DeclareMathOperator{\BOBDKP}{2\mathit{O}2\mathit{DKP}}
+
+\title{}
+\author{}
+%\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+%
+\begin{description}
+\item[Group 1:]  6 instances of various sizes, randomly generated with the same generator, without any specific correlation. \texttt{ZTL100, ZTL250, ZTL500 and ZTL750} are 4 instances picked from the collection maintained by Zitzler and Laumanns\footnote{\url{http://www.tik.ee.ethz.ch/sop/download/supplementary/testProblemSuite/}}.
+\texttt{ZTL28 and ZTL105} are 2 additional instances derived respectively from ZTL100 and ZTL250, where 
+$\omega_i \approx 0.5 \, \sum_{j=1}^n{w_{ij}}, \, i=1,\dots,m$.
+\texttt{ZTL150\_f250, ZTL200\_f250} are 2 additional instances derived from ZTL250, where 
+$\omega_i \approx 0.5 \, \sum_{j=1}^n{w_{ij}}, \, i=1,\dots,m$.
+\texttt{ZTL150\_f500, ZTL200\_f500} are 2 additional instances derived from ZTL500, where 
+$\omega_i \approx 0.5 \, \sum_{j=1}^n{w_{ij}}, \, i=1,\dots,m$.
+%the capacity is set to half the sum of weight for all the items belonging to the reduced instances. 
+The number following ZTL in the name gives the number of variables.
+%
+\item[Group 2:] 15 correlated instances with 28 variables, introduced by Olga Perederieiva \cite{Perederieiva:2011a}. \texttt{A1, A2, A3, A4, D1, D2, D3, D4, kp28W-ZTL, kp28,  kp28-2, kp28W, kp28W-Perm, kp28c1W-c2ZTL} and \\ \texttt{kp28cW-WZTL} are extention of $\BDKP$ instances available on the OR-library\footnote{\url{http://people.brunel.ac.uk/~mastjjb/jeb/orlib/mknapinfo.html}} where a second objective has been added with respect to several definitions of correlation to obtain a $\BOBDKP$ (see Olga Perederieiva \cite{Perederieiva:2011a} for further details).
+%
+\item[Group 3:] 7 additional correlated instances with 105 variables, obtained following the rules described for the Group~2. \texttt{W7BI-rnd1-1800, W7BI-rnd1-3000, W7BI-tube1-1800, W7BI-tube1-3000,} \\ \texttt{W7BI-tube1-asyn, W7BI-tube2-1800, Wcollage-tube} are summarized in Table \ref{tab:instances}. 
+\end{description}
+
+\begin{table}[ht]
+	\centering
+	\caption{Information about instances. Column (a) gives the name of the original single-objective $\BDKP$.
+Column (b) indicates the manner for generating the second objective: negatively correlated with the first one or, done according to the method reported in Osorio 2005 \cite{Osorio:2005}. %(denoted by \emph{Osorio's method}).
+Column (c) reports   the ratio $\omega_1 / \sum_{j=1}^n{w_{1j}}$ for the first dimension (the first constraint). The column (d) is similar to the column (c), for the second dimension.}
+	\label{tab:instances}
+	\begin{tabular}{llllll}
+		\toprule
+		instance 			& (a) 		& (b)  & (c)	& (d) 		\\
+		\midrule
+	%	kp28-2				& kp28		& 28	& Osorio's method			& 0.53				& 0.60					\\
+		W7BI-rnd1-1800		& Weing7		& Osorio's method			& 0.48				& 0.50					\\
+		W7BI-rnd1-3000		& Weing7		& Osorio's method			& 0.80				& 0.84					\\
+		W7BI-tube1-1800		& Weing7	 	& anti-correlated			& 0.50				& 0.50					\\
+		W7BI-tube1-3000		& Weing7	 	& anti-correlated			& 0.80				& 0.84					\\
+		W7BI-tube1-asyn		& Weing7	 	& anti-correlated			& 0.80				& 0.20					\\
+		W7BI-tube2-1800		& Weing7	 	& anti-correlated			& 0.48				& 0.50					\\
+		Wcollage-tube		& Weing1	 	& anti-correlated			& 0.50				& 0.50					\\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\end{document}  

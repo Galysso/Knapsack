@@ -2,10 +2,12 @@
 #define PROBLEME_H
 
 #include "graphe.h"
+#include "2DKPSurrogate/2DKPSurrogate.h"
 
 #include <stdbool.h>
 
 typedef struct Chemin Chemin;
+typedef struct Noeud Noeud;
 
 typedef struct Probleme Probleme;
 typedef struct Solution Solution;
@@ -68,6 +70,7 @@ int meilleureBorne(ListeSol *lSolLB, Probleme *p);
 bool estEfficace(ListeSol *lSol, Solution *sol);
 void ajouterSolution(ListeSol *lSol, Solution *sol);
 bool ajouterSolutionDom(ListeSol *lSol, Solution *sol);
+bool ajouterSolutionDomTri(ListeSol *lSol, Solution *sol);
 bool estComplete(Solution *solution, Probleme *p);
 void completerGlouton(Solution *sol, Probleme *p);
 ListeSol *completions(Solution *sol, Probleme *p);
@@ -79,7 +82,10 @@ void calculerProfitsCumules(Probleme *p);
 void calculerPoidsCumules(Probleme *p);
 Probleme *genererProbleme(char *nomFichier);
 Probleme *genererProblemeGautier(char *nomFichier);
-Solution *creerSolution(Probleme *p, Chemin *chemin);
+Solution *creerSolutionChemin(Probleme *p, Chemin *chemin);
+Solution *creerSolutionSurrPre(Probleme *p, solution *s, int i, bool ajout);
+Solution *creerSolutionSurrGraphe(Probleme *p, solution *s, Noeud *noeudPrec, int i, bool ajout);
+//Solution *creerSolutionSurrGraphe(Probleme *p, solution *s, int i, bool ajout);
 void fixer01(Probleme *p, int y1, int y2, ListeSol *lSolHeur);
 Solution *copierSolution(Solution *sol, int n);
 ListeSol *initListeSol(int nbMax);
